@@ -3,6 +3,10 @@ plugins {
 }
 
 allprojects {
+    apply(from = "$rootDir/version.gradle.kts")
+    group = "io.spine"
+    version = rootProject.extra["versionToPublish"]!!
+
     repositories {
         mavenCentral()
     }
