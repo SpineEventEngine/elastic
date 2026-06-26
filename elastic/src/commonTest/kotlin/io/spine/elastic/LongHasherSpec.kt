@@ -24,31 +24,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-plugins {
-    kotlin("multiplatform")
-}
+package io.spine.elastic
 
-kotlin {
-    jvm()
-    jvmToolchain(17)
+import io.kotest.matchers.shouldBe
+import kotlin.test.Test
 
-    // Native targets (DP-2: JVM + Native). The Kotlin default hierarchy template
-    // creates the shared `nativeMain`/`nativeTest` (and `appleMain`) source sets
-    // used for the `expect`/`actual` seams introduced in later phases.
-    macosArm64()
-    macosX64()
-    linuxX64()
-    linuxArm64()
-    mingwX64()
-    iosArm64()
-    iosSimulatorArm64()
+internal class LongHasherSpec {
 
-    sourceSets {
-        commonTest {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotest.assertions.core)
-            }
+    @Test
+    fun `maps zero to zero`() {
+        fmix64(0L) shouldBe 0L
+    }
+
+    @Test
+    fun `matches the reference MurmurHash3 64-bit finalizer`() {
+        fmix64(1L) shouldBe -5451962507482445012L
+        fmix64(2L) shouldBe 4233148493373801447L
+        fmix64(-1L) shouldBe 7256831767414464289L
+    }
+
+    @Test
+    fun `exposes the finalizer through the default hasher`() {
+        val keys = listOf(0L, 1L, 2L, -1L, Long.MAX_VALUE, Long.MIN_VALUE, 12_345L)
+        for (key in keys) {
+            LongHasher.Default.hash(key) shouldBe fmix64(key)
         }
+    }
+
+    @Test
+    fun `avalanches sequential keys to distinct hashes`() {
+        val hashes = HashSet<Long>()
+        for (key in 0L until 10_000L) {
+            hashes.add(fmix64(key))
+        }
+        hashes.size shouldBe 10_000
     }
 }
