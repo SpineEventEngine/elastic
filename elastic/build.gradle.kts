@@ -28,10 +28,12 @@
 
 import io.spine.dependency.kotlinx.Coroutines
 import io.spine.dependency.test.Kotest
+import io.spine.gradle.report.license.LicenseReporter
 
 plugins {
     `kmp-module`
 }
+LicenseReporter.generateReportIn(project)
 
 kotlin {
     // `kmp-module` configures the JVM target plus the common/JVM test stack

@@ -24,6 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import io.spine.gradle.report.license.LicenseReporter
 import kotlinx.benchmark.gradle.BenchmarkConfiguration
 
 // A benchmark harness, not a published library, so it does NOT apply the
@@ -38,6 +39,7 @@ plugins {
     // plugins block can't reference buildSrc objects.
     kotlin("plugin.allopen") version "2.3.21"
 }
+LicenseReporter.generateReportIn(project)
 
 // `kotlinx-benchmark` generates JMH harness classes that subclass the `@State`
 // classes, so those must be `open`. On the JVM `kotlinx.benchmark.State` is a
