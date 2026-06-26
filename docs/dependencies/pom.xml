@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<modelVersion>4.0.0</modelVersion>
+<!-- 
+ 
+This file was generated using the Gradle `generatePom` task. 
+This file is not suitable for `maven` build tasks. It only describes the first-level dependencies of 
+all modules and does not describe the project structure per-subproject.
+ 
+ -->
+<groupId>io.spine</groupId>
+<artifactId>elastic</artifactId>
+<version>1.0.0-SNAPSHOT-002</version>
+
+<inceptionYear>2015</inceptionYear>
+
+<licenses>
+  <license>
+    <name>Apache License, Version 2.0</name>
+    <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    <distribution>repo</distribution>
+  </license>
+</licenses>
+
+<dependencies>
+  <dependency>
+    <groupId>com.puppycrawl.tools</groupId>
+    <artifactId>checkstyle</artifactId>
+    <version>10.12.1</version>
+  </dependency>
+  <dependency>
+    <groupId>io.gitlab.arturbosch.detekt</groupId>
+    <artifactId>detekt-cli</artifactId>
+    <version>1.23.8</version>
+  </dependency>
+  <dependency>
+    <groupId>io.kotest</groupId>
+    <artifactId>kotest-assertions-core</artifactId>
+    <version>6.1.11</version>
+  </dependency>
+  <dependency>
+    <groupId>io.kotest</groupId>
+    <artifactId>kotest-framework-engine</artifactId>
+    <version>6.1.11</version>
+  </dependency>
+  <dependency>
+    <groupId>io.kotest</groupId>
+    <artifactId>kotest-property</artifactId>
+    <version>6.1.11</version>
+  </dependency>
+  <dependency>
+    <groupId>io.kotest</groupId>
+    <artifactId>kotest-runner-junit5-jvm</artifactId>
+    <version>6.1.11</version>
+  </dependency>
+  <dependency>
+    <groupId>io.spine.tools</groupId>
+    <artifactId>base-testlib</artifactId>
+    <version>2.0.0-SNAPSHOT.213</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jacoco</groupId>
+    <artifactId>org.jacoco.agent</artifactId>
+    <version>0.8.15</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jacoco</groupId>
+    <artifactId>org.jacoco.report</artifactId>
+    <version>0.8.15</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.dokka</groupId>
+    <artifactId>all-modules-page-plugin</artifactId>
+    <version>2.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.dokka</groupId>
+    <artifactId>analysis-kotlin-symbols</artifactId>
+    <version>2.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.dokka</groupId>
+    <artifactId>dokka-base</artifactId>
+    <version>2.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.dokka</groupId>
+    <artifactId>dokka-core</artifactId>
+    <version>2.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.dokka</groupId>
+    <artifactId>templating-plugin</artifactId>
+    <version>2.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-allopen-compiler-plugin-embeddable</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-bom</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-build-tools-compat</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-build-tools-impl</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-compiler-embeddable</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-klib-commonizer-embeddable</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-scripting-compiler-embeddable</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-stdlib</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-test</artifactId>
+    <version>2.3.21</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-test-annotations-common</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-test-common</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlinx</groupId>
+    <artifactId>kotlinx-benchmark-runtime</artifactId>
+    <version>0.4.17</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlinx</groupId>
+    <artifactId>kotlinx-coroutines-bom</artifactId>
+    <version>1.10.2</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jetbrains.kotlinx</groupId>
+    <artifactId>kotlinx-coroutines-test</artifactId>
+    <version>1.10.2</version>
+  </dependency>
+  <dependency>
+    <groupId>org.junit</groupId>
+    <artifactId>junit-bom</artifactId>
+    <version>6.1.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter-engine</artifactId>
+    <version>6.1.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.openjdk.jmh</groupId>
+    <artifactId>jmh-core</artifactId>
+    <version>1.37</version>
+  </dependency>
+</dependencies>
+
+</project>
