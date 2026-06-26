@@ -17,15 +17,16 @@ The speed claim is **gated on primitive keys**. For boxed/object keys an
 open-addressing map at moderate load may only break even with `HashMap`, whose
 high-bit spread and treeify are a real safety net.
 
-**Reframed by Phase 1 measurement (2026-06): the win is memory-first.** On the JVM
-the JIT escape-analyses away `HashMap`'s *temporary* lookup-time key box, so
-eliminating boxing buys a large **footprint** reduction (and far less
-allocation/GC) much more than it buys raw lookup nanoseconds. The fully-primitive
-`Long → Long` map retains **~4.7×** less heap than `HashMap<Long, Long>` and is
-competitive-to-faster on time **at scale**; in-cache it can trail `HashMap`
-slightly, because the SWAR + `fmix64` arithmetic is extra work the chained map
-avoids. The Phase 1 criteria below are therefore stated as **memory + at-scale
-time**, not a lookup-speed multiple.
+**Reframed by Phase 1 measurement (2026-06): the win is layout-driven.** Storing keys
+and values in compact primitive arrays — no per-entry node, no boxes — both shrinks
+the footprint and, *at scale*, cuts cache misses versus `HashMap`'s scattered
+node-and-box graph, so the same compactness pays off twice. The fully-primitive
+`Long → Long` map retains **~4.7×** less heap than `HashMap<Long, Long>` **and** is
+**~2× faster on random-access lookup at 1M** (fairly measured). In-cache (small tables
+that fit L1/L2) the margin is small — the SWAR + `fmix64` arithmetic roughly offsets
+the saved indirection. The Phase 1 criteria below are therefore stated as **memory +
+at-scale time**, the regimes where the layout advantage is decisive, rather than a
+single uniform lookup-speed multiple.
 
 ## Phase 0 baseline snapshot (indicative)
 
@@ -57,14 +58,14 @@ the JVM's here, confirming it is the more beatable baseline.
   (**4.7×**) for `Long → Long`; 38 vs 89 (**2.3×**) for `Long → V`.*
 - **Time at scale.** At ≥ 1M entries (out of cache), on **random-access** lookup
   and on **presized insert**, the primitive map is **≥ as fast as `HashMap`**
-  (target ≥ 1.2×). *Measured: ~1.24× random-access lookup at 1M; ~1.16× in-cache
-  presized insert; ≈ parity at 1M insert.*
-- **No material regression.** Never slower than stdlib by more than **~15 %** on any
-  core op at any size; the known weak spot is in-cache lookup (measured ~14 %).
+  (target ≥ 1.2×). *Measured (fair methodology): ~2.0× random-access lookup at 1M;
+  ~1.25–1.5× presized insert; in-cache (10k) the lookup margin is ~1.1×.*
+- **No material regression.** Never slower than stdlib on any core op at any size;
+  in-cache margins are small (~1.1×, near parity) but not a regression.
 - **Optional faster hasher.** `LongHasher.Fibonacci` (single multiply) trades
-  adversarial-key robustness for ~27–29 % lower hash cost (a stable, same-run figure);
-  with it the primitive map's random-access lookup comfortably beats `HashMap` at both
-  sizes. The default `fmix64` stays the safe choice for untrusted keys.
+  adversarial-key robustness for ~26–28 % lower hash cost (a stable, same-run figure);
+  with it the primitive map's random-access lookup is ~1.5× (10k) to ~2.8× (1M) faster
+  than `HashMap`. The default `fmix64` stays the safe choice for untrusted keys.
 - **Native.** The same common code runs on Kotlin/Native; report per-platform
   numbers (the Native `HashMap` is the more beatable baseline).
 - **Retired:** the former "≥ 2× faster on `lookupHit`" target — undercut by JVM

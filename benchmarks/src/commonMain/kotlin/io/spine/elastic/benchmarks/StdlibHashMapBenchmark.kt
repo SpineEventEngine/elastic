@@ -72,7 +72,7 @@ class StdlibHashMapBenchmark {
         val n = size
         keys = LongArray(n) { it.toLong() }
         shuffledKeys = shuffle(keys)
-        val prepared = HashMap<Long, Long>(n * 2)
+        val prepared = HashMap<Long, Long>((n / JDK_LOAD_FACTOR).toInt() + 1)
         for (key in keys) {
             prepared[key] = key
         }
@@ -82,17 +82,21 @@ class StdlibHashMapBenchmark {
     @Benchmark
     fun lookupHit(blackhole: Blackhole) {
         val m = map
+        var sink = 0L
         for (key in keys) {
-            blackhole.consume(m[key])
+            sink += m[key] ?: 0L
         }
+        blackhole.consume(sink)
     }
 
     @Benchmark
     fun lookupHitShuffled(blackhole: Blackhole) {
         val m = map
+        var sink = 0L
         for (key in shuffledKeys) {
-            blackhole.consume(m[key])
+            sink += m[key] ?: 0L
         }
+        blackhole.consume(sink)
     }
 
     @Benchmark

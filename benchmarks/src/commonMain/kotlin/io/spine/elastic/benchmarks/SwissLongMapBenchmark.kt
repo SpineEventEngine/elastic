@@ -82,26 +82,32 @@ class SwissLongMapBenchmark {
     @Benchmark
     fun lookupHit(blackhole: Blackhole) {
         val m = map
+        var sink = 0L
         for (key in keys) {
-            blackhole.consume(m[key])
+            sink += m[key] ?: 0L
         }
+        blackhole.consume(sink)
     }
 
     @Benchmark
     fun lookupHitShuffled(blackhole: Blackhole) {
         val m = map
+        var sink = 0L
         for (key in shuffledKeys) {
-            blackhole.consume(m[key])
+            sink += m[key] ?: 0L
         }
+        blackhole.consume(sink)
     }
 
     @Benchmark
     fun lookupMiss(blackhole: Blackhole) {
         val m = map
         val absentOffset = size.toLong()
+        var sink = 0L
         for (key in keys) {
-            blackhole.consume(m[key + absentOffset])
+            sink += m[key + absentOffset] ?: 0L
         }
+        blackhole.consume(sink)
     }
 
     @Benchmark

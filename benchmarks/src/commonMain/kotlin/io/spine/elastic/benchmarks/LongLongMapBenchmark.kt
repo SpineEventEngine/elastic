@@ -64,7 +64,7 @@ class LongLongMapBenchmark {
     private var keys: LongArray = LongArray(0)
     private var shuffledKeys: LongArray = LongArray(0)
     private var map: LongLongMap = LongLongMap()
-    private var fastHashMap: LongLongMap = LongLongMap()
+    private var fibonacciMap: LongLongMap = LongLongMap()
 
     @Setup
     fun setup() {
@@ -78,11 +78,11 @@ class LongLongMapBenchmark {
         map = prepared
         // Same map but with the single-multiply Fibonacci hasher instead of the
         // default fmix64 (two multiplies) — to quantify the hash's in-cache cost.
-        val fast = LongLongMap(expectedSize = n, hasher = LongHasher.Fibonacci)
+        val fibonacci = LongLongMap(expectedSize = n, hasher = LongHasher.Fibonacci)
         for (key in keys) {
-            fast.put(key, key)
+            fibonacci.put(key, key)
         }
-        fastHashMap = fast
+        fibonacciMap = fibonacci
     }
 
     @Benchmark
@@ -107,7 +107,7 @@ class LongLongMapBenchmark {
 
     @Benchmark
     fun lookupHitShuffledFastHash(blackhole: Blackhole) {
-        val m = fastHashMap
+        val m = fibonacciMap
         var sink = 0L
         for (key in shuffledKeys) {
             sink += m[key]
