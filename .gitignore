@@ -192,8 +192,10 @@ docs/_preview/resources/
 # >>> repo-local entries (preserved across ./config/pull) >>>
 # Ignore Gradle project-specific cache directory
 .gradle
+
 # Ignore Gradle build output directory
 build
+
 # Ignore Kotlin plugin data
 .kotlin
 # <<< repo-local entries <<<
