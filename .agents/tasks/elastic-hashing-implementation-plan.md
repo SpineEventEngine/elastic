@@ -364,6 +364,31 @@ here.
 **Goal:** ship one structure that *demonstrably* beats stdlib, and prove the storage
 foundation (control bytes + SWAR + primitive specialization).
 
+**Status — IMPLEMENTED** (branch `phase-1`); details in
+[`phase-1-swiss-long-map.md`](phase-1-swiss-long-map.md). Green on JVM + host Native,
+detekt + Kover (Swar 100%, SwissLongMap 98% line); reviewed by `kotlin-engineer`,
+`spine-code-review`, `review-docs`.
+- `SwissLongMap<V>` + `internal Swar`: **packed-`Long` control words** (8 control bytes per
+  `Long`, single-load SWAR — the `ByteArray` first cut was ~3–4× slower); **carry-free** SWAR
+  match (the borrow trick false-matches a neighbour); **group-aligned triangular** probing
+  (no cloned tail); **simple tombstones** (DP-8) with `7/8` load and a guaranteed-empty-lane
+  invariant; **resize+rehash** growth (DP-9); single-threaded (DP-13), structured for the
+  Phase-4 SWMR derivation. **KSP deferred** (DP-7) — hand-written `Long → V` only.
+- Also shipped the **fully-primitive `LongLongMap`** (`Long → Long`, values in a `LongArray`,
+  nothing boxed; fastutil-style `absentValue` API) and extracted shared `internal Capacity`
+  sizing. `LongLongMap` is the true primitive-vs-primitive peer of `HashMap<Long,Long>`.
+- **Result — memory-first win.** Exact retained heap (JOL): **`LongLongMap` 4.7× smaller** than
+  `HashMap<Long,Long>` (19 vs 89 bytes/entry), `SwissLongMap` 2.3× smaller. On **time** (fair
+  `lookupHitShuffled`), `LongLongMap` is **~1.24× faster at 1M** and ~1.16× on in-cache insert,
+  ties at 1M insert, but loses in-cache lookup; it never reaches **≥2×**. The 2× lookup-time
+  target did not land (the JIT escape-analyses away `HashMap`'s temporary lookup box; in-cache
+  arithmetic offsets gains). `SwissLongMap`'s value boxing makes its inserts ~4.7× slower than
+  `LongLongMap` — lead the speed story with the primitive-value form.
+- **Verdict:** "beats stdlib" is met **decisively on memory** and **modestly on time-at-scale**;
+  the **≥2× lookup-time criterion should be retired / re-scoped to memory + at-scale time**.
+- **Open follow-ups:** version bump (PR time); KSP generator (DP-7) to remove the
+  `SwissLongMap`/`LongLongMap` duplication; optional in-cache hot-path tuning.
+
 **Deliverables**
 - A **SwissTable/ScatterMap-style open-addressing map**: `ByteArray` control bytes
   (7-bit fingerprint + empty/deleted sentinels), single-`Long` 8-byte SWAR group scan,

@@ -45,8 +45,9 @@ deferred until there is demand, as the speed win is not credible there.
   source of truth on every target; platform seams exist only where a target
   offers a real speedup (e.g. an optional, flagged JVM SIMD scan), never as the
   correctness path.
-- **On-heap primitive arrays only** (`LongArray`, `ByteArray` control bytes) —
-  no off-heap, no `Unsafe`, no FFM, keeping storage first-class in common code.
+- **On-heap primitive arrays only** (`LongArray` keys, with control bytes packed
+  eight-to-a-`Long` for single-load SWAR scans) — no off-heap, no `Unsafe`, no
+  FFM, keeping storage first-class in common code.
 - **SWAR, not SIMD.** Group scans use a single-`Long` 8-byte SWAR word; the JDK
   Vector API is unreachable from common Kotlin and measured slower, so it stays
   an optional extra at most.
