@@ -67,6 +67,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotest.assertions.core)
+                implementation(libs.kotest.property)
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
     }

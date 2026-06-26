@@ -52,6 +52,14 @@
   cores ship first and are designed to be concurrency-aware (atomic table publication);
   the SWMR variant is then *derived*, targeting the SwissTable map first. Concurrent
   funnel/elastic is an unprecedented research **stretch**, not a committed deliverable.
+- **DP-7a — OPEN (surfaced during Phase 0):** KSP has **no release for Kotlin 2.4.0**
+  (latest is 2.3.9), and detekt (1.23.8) / kotlinx-benchmark (0.4.17) also lag 2.4.0.
+  Kover, detekt, and kotlinx-benchmark were verified working on 2.4.0; only **KSP is
+  blocked**. Since the KSP generator is Phase 1 work (it produces the `Long→V` map),
+  this does not block Phase 0. **Decision to take at Phase 1 start:** (a) pin Kotlin to
+  the latest KSP-supported 2.3.x; (b) stay on 2.4.0 and wait for KSP to catch up; or
+  (c) generate via a Gradle source-generating task instead of KSP. Recommendation: (a)
+  if KSP is needed immediately, else (b).
 
 > This plan supersedes nothing in the kickoff report; it *grounds* it with a market
 > survey and a per-platform feasibility analysis, and reorders the phases so the
@@ -307,6 +315,23 @@ Principles:
 
 **Goal:** a clean KMP build, a credible two-tier benchmark harness, a correctness/
 differential-oracle harness, the `(n, δ)` sizing formulas, and written success metrics.
+
+**Status — IMPLEMENTED** (branch `phase-0-foundation`), green on JVM + host Native:
+- Scaffold cleaned (`lib/` dropped, catalog is the single Kotlin-version source);
+  JVM + Native targets wired (`macosX64` dropped — deprecated by Kotlin).
+- `OpenAddressingLongMap<V>`, `LongHasher`/`fmix64`, and `ElasticSizing`/`FunnelSizing`
+  ported from the paper and **cross-checked byte-for-byte against `sternma/optopenhash`**
+  (example fixtures + `kotest-property` invariants).
+- Static analysis (detekt, gating) + coverage (Kover) wired and passing.
+- Two-tier benchmark harness (`kotlinx-benchmark`, JVM JMH + Native) running, with the
+  `StdlibHashMapBenchmark` baseline captured ([performance-goals](../../docs/performance-goals.md)).
+- **Differential-oracle scope clarified:** the *sizing* cross-check vs `sternma` is done
+  (unit + property tests). *Map-semantics* differential testing is best done against an
+  in-process `LinkedHashMap` model once a structure exists → **Phase 1**; the behavioral
+  `sternma`/`opthash` cross-check (probe paths) → **Phase 2/3**. No premature golden
+  fixtures are committed.
+- **Surfaced DP-7a:** KSP has no Kotlin 2.4.0 release yet — decision deferred to Phase 1
+  start (the generator is Phase 1 work).
 
 **Deliverables**
 - Scaffold cleanup: **drop `lib/`** and its leftover `commons-math3`/`guava` catalog
