@@ -26,6 +26,26 @@
 
 plugins {
     kotlin("multiplatform")
+    alias(libs.plugins.kover)
+    alias(libs.plugins.detekt)
+}
+
+detekt {
+    // Lexical/AST analysis only (no type-resolution classpath) to stay decoupled
+    // from the KMP compile outputs and the tooling-version lag (see plan DP-3).
+    buildUponDefaultConfig = true
+    parallel = true
+    config.setFrom(rootProject.file("gradle/detekt.yml"))
+    // The default source roots are the JVM-style `src/main`/`src/test`, which a
+    // KMP module does not use; point detekt at the multiplatform source sets.
+    source.setFrom(
+        "src/commonMain/kotlin",
+        "src/commonTest/kotlin",
+        "src/jvmMain/kotlin",
+        "src/jvmTest/kotlin",
+        "src/nativeMain/kotlin",
+        "src/nativeTest/kotlin",
+    )
 }
 
 kotlin {
@@ -36,7 +56,6 @@ kotlin {
     // creates the shared `nativeMain`/`nativeTest` (and `appleMain`) source sets
     // used for the `expect`/`actual` seams introduced in later phases.
     macosArm64()
-    macosX64()
     linuxX64()
     linuxArm64()
     mingwX64()

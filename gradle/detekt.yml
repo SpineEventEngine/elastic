@@ -1,0 +1,10 @@
+# Project detekt configuration (merged on top of detekt's default ruleset via
+# `buildUponDefaultConfig = true`). Repo-owned for now; folded into the shared
+# Spine `config` ruleset as part of incremental adoption (plan DP-3).
+
+style:
+  MagicNumber:
+    # This is a numeric/algorithmic library: hash finalizer multipliers and the
+    # level/funnel sizing factors are constants transcribed from the paper and
+    # the reference implementation. Flagging them as "magic" is pure noise here.
+    active: false

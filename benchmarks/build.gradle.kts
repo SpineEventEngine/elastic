@@ -36,7 +36,6 @@ kotlin {
     // `kotlinx-benchmark` (added in a later step) registers the JVM (JMH) and
     // host-native runners on top of these.
     macosArm64()
-    macosX64()
     linuxX64()
     linuxArm64()
     mingwX64()
