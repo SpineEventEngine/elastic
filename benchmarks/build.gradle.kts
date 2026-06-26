@@ -24,34 +24,67 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import kotlinx.benchmark.gradle.BenchmarkConfiguration
+
 plugins {
     kotlin("multiplatform")
+    alias(libs.plugins.benchmark)
+    alias(libs.plugins.kotlin.allopen)
+}
+
+// `kotlinx-benchmark` generates JMH harness classes that subclass the `@State`
+// classes, so those must be `open`. On the JVM `kotlinx.benchmark.State` is a
+// typealias to JMH's annotation, so both names must be opened.
+allOpen {
+    annotation("kotlinx.benchmark.State")
+    annotation("org.openjdk.jmh.annotations.State")
 }
 
 kotlin {
     jvm()
     jvmToolchain(17)
 
-    // Mirror the library's targets so benchmarks can run per platform.
-    // `kotlinx-benchmark` (added in a later step) registers the JVM (JMH) and
-    // host-native runners on top of these.
+    // Benchmark on the JVM (authoritative, JMH) and the host plus the primary
+    // server target. The raw-JMH tier for GC/alloc profiling is a separate
+    // module added when first needed (plan DP-4).
     macosArm64()
     linuxX64()
-    linuxArm64()
-    mingwX64()
-    iosArm64()
-    iosSimulatorArm64()
 
     sourceSets {
         commonMain {
             dependencies {
                 implementation(project(":elastic"))
-            }
-        }
-        commonTest {
-            dependencies {
-                implementation(kotlin("test"))
+                implementation(libs.kotlinx.benchmark.runtime)
             }
         }
     }
+}
+
+benchmark {
+    targets {
+        register("jvm")
+        register("macosArm64")
+        register("linuxX64")
+    }
+    configurations {
+        named("main") {
+            commonSettings()
+            warmups = 5
+            iterations = 5
+            iterationTime = 1
+            iterationTimeUnit = "s"
+        }
+        // A fast configuration for verifying the harness end-to-end in CI/dev.
+        register("smoke") {
+            commonSettings()
+            warmups = 1
+            iterations = 1
+            iterationTime = 200
+            iterationTimeUnit = "ms"
+        }
+    }
+}
+
+fun BenchmarkConfiguration.commonSettings() {
+    reportFormat = "json"
 }
