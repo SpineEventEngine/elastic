@@ -2,13 +2,15 @@
 # https://docs.gradle.org/current/userguide/version_catalogs.html#sec::toml-dependencies-format
 
 [versions]
-kotlin = "2.4.0"
+# Pinned to the latest 2.3.x rather than 2.4.0 so KSP (codegen, DP-7) is
+# available: KSP tracks the Kotlin minor and has no 2.4.0 release yet (DP-7a).
+kotlin = "2.3.21"
+ksp = "2.3.9"
 kotest = "6.2.1"
 coroutines = "1.11.0"
 kover = "0.9.8"
 detekt = "1.23.8"
-# Pinned and ready; applied in later phases (see plan DP-7 / DP-13).
-# NOTE: KSP has no release for Kotlin 2.4.0 yet (latest is 2.3.9) — see DP-7a.
+# Pinned and ready; atomicfu is applied with the concurrency work (DP-13).
 benchmark = "0.4.17"
 atomicfu = "0.33.0"
 
@@ -21,6 +23,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }

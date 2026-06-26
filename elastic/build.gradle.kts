@@ -26,9 +26,14 @@
 
 plugins {
     kotlin("multiplatform")
+    alias(libs.plugins.ksp)
     alias(libs.plugins.kover)
     alias(libs.plugins.detekt)
 }
+
+// KSP is applied here so the codegen toolchain is in place from the start
+// (DP-7 / DP-7a). The processor that generates the primitive specialization
+// matrix — and the `ksp(...)` wiring per target — arrives in Phase 1.
 
 detekt {
     // Lexical/AST analysis only (no type-resolution classpath) to stay decoupled
