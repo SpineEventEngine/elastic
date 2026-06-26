@@ -26,6 +26,7 @@
 
 @file:Suppress("unused") // Source set `val`s are used implicitly.
 
+import io.spine.dependency.kotlinx.AtomicFu
 import io.spine.dependency.kotlinx.Coroutines
 import io.spine.dependency.test.Kotest
 import io.spine.gradle.report.license.LicenseReporter
@@ -59,5 +60,15 @@ kotlin {
                 )
             }
         }
+    }
+}
+
+// coroutines-test and kotest pull conflicting transitive `atomicfu` versions
+// (0.23.1 / 0.26.1) into the Native test klib compile, and KMP klib resolution
+// fails on version conflicts rather than picking the highest. Force config's
+// resolvable version across all configurations.
+configurations.all {
+    resolutionStrategy {
+        force(AtomicFu.lib)
     }
 }
