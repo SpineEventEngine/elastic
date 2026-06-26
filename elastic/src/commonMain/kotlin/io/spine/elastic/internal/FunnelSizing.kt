@@ -56,8 +56,8 @@ import kotlin.math.roundToInt
 internal class FunnelSizing(val capacity: Int, val delta: Double) {
 
     init {
-        require(capacity > 0) { "Capacity must be positive: $capacity." }
-        require(delta > 0.0 && delta < 1.0) { "delta must be in (0, 1): $delta." }
+        requirePositiveCapacity(capacity)
+        requireValidDelta(delta)
     }
 
     /**
@@ -77,7 +77,14 @@ internal class FunnelSizing(val capacity: Int, val delta: Double) {
     /** Size of the special overflow array, `floor(3 * delta * capacity / 4)`. */
     val specialSize: Int = max(1, floor(3 * delta * capacity / 4).toInt())
 
-    /** Number of slots in the primary region. */
+    /**
+     * Number of slots in the primary region (everything outside the special
+     * array). Note that the bucket grid covers only `totalBuckets * beta` of
+     * these; the trailing `primarySize % beta` slots are not addressable by any
+     * bucket — an intentional consequence of fixed-size buckets. Table-allocation
+     * logic should therefore size the primary arrays from [totalBuckets] and
+     * [beta], not from this value.
+     */
     val primarySize: Int = capacity - specialSize
 
     /** Total number of `beta`-sized buckets across all primary levels. */

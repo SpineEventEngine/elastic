@@ -61,12 +61,17 @@ internal object ElasticSizing {
      * (e.g. capacity 1024, delta 0.1 reaches load 0.9004 > 0.9). The level sizes
      * still match the reference exactly.
      */
-    fun maxInserts(capacity: Int, delta: Double): Int =
-        capacity - ceil(delta * capacity).toInt()
+    fun maxInserts(capacity: Int, delta: Double): Int {
+        requirePositiveCapacity(capacity)
+        requireValidDelta(delta)
+        return capacity - ceil(delta * capacity).toInt()
+    }
 
     /** The number of geometric levels for a table of [capacity] slots. */
-    fun levelCount(capacity: Int): Int =
-        max(1, floor(log2(capacity.toDouble())).toInt())
+    fun levelCount(capacity: Int): Int {
+        requirePositiveCapacity(capacity)
+        return max(1, floor(log2(capacity.toDouble())).toInt())
+    }
 
     /**
      * The size of each level, summing to exactly [capacity]. Every level but the
@@ -92,6 +97,7 @@ internal object ElasticSizing {
      * `max(1, c * min(log2(1/load), log2(1/delta)))`.
      */
     fun probeLimit(load: Double, delta: Double, c: Int = PROBE_BUDGET): Int {
+        requireValidDelta(delta)
         val byLoad = if (load > 0.0) log2(1.0 / load) else 0.0
         val byDelta = log2(1.0 / delta)
         return max(1.0, c * min(byLoad, byDelta)).toInt()

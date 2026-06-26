@@ -26,6 +26,7 @@
 
 package io.spine.elastic.internal
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlin.math.ceil
 import kotlin.math.log2
@@ -83,5 +84,14 @@ internal class ElasticSizingSpec {
     @Test
     fun `keeps the probe budget at least one`() {
         ElasticSizing.probeLimit(load = 0.9999, delta = 0.1) shouldBe 1
+    }
+
+    @Test
+    fun `rejects invalid capacity and delta`() {
+        shouldThrow<IllegalArgumentException> { ElasticSizing.levelCount(0) }
+        shouldThrow<IllegalArgumentException> { ElasticSizing.levelSizes(-1) }
+        shouldThrow<IllegalArgumentException> { ElasticSizing.maxInserts(0, 0.1) }
+        shouldThrow<IllegalArgumentException> { ElasticSizing.maxInserts(100, 0.0) }
+        shouldThrow<IllegalArgumentException> { ElasticSizing.probeLimit(load = 0.5, delta = 1.0) }
     }
 }
