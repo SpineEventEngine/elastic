@@ -46,9 +46,12 @@ import kotlinx.benchmark.Warmup
  * This is the bar the Phase 1 primitive `Long → V` map must beat (and the proof
  * that the cross-platform harness works end-to-end). It runs on JVM (via JMH)
  * and on Kotlin/Native, so the per-platform baselines are captured from the
- * outset. `lookupHit` and `insertAll` are deliberately separate operations
- * (decision DP-4 / §1.4 of the plan); each result is consumed through a
- * [Blackhole] to defeat dead-code elimination.
+ * outset. Operations are deliberately separate (decision DP-4 / §1.4 of the
+ * plan): `lookupHit`; `insertAllPresized` — the fair, steady-state insert
+ * baseline, with the map pre-sized in its own units (capacity for `size` entries
+ * at the JDK load factor) as the fairness gate requires; and `insertAllGrowing` —
+ * the same inserts into a default-capacity map, isolating resize/rehash cost.
+ * Each result is consumed through a [Blackhole] to defeat dead-code elimination.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
@@ -83,11 +86,25 @@ class StdlibHashMapBenchmark {
     }
 
     @Benchmark
-    fun insertAll(blackhole: Blackhole) {
+    fun insertAllPresized(blackhole: Blackhole) {
+        val fresh = HashMap<Long, Long>((size / JDK_LOAD_FACTOR).toInt() + 1)
+        for (key in keys) {
+            fresh[key] = key
+        }
+        blackhole.consume(fresh)
+    }
+
+    @Benchmark
+    fun insertAllGrowing(blackhole: Blackhole) {
         val fresh = HashMap<Long, Long>()
         for (key in keys) {
             fresh[key] = key
         }
         blackhole.consume(fresh)
+    }
+
+    private companion object {
+        /** The default `java.util.HashMap` load factor; used to pre-size fairly. */
+        const val JDK_LOAD_FACTOR = 0.75
     }
 }

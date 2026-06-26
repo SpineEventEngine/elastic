@@ -60,8 +60,13 @@ internal class FunnelSizing(val capacity: Int, val delta: Double) {
         require(delta > 0.0 && delta < 1.0) { "delta must be in (0, 1): $delta." }
     }
 
-    /** Maximum insertions allowed (table never exceeds load `1 - delta`). */
-    val maxInserts: Int = capacity - (delta * capacity).toInt()
+    /**
+     * Maximum insertions allowed, reserving `ceil(delta * capacity)` empty slots
+     * so the table never exceeds load `1 - delta`. (The `sternma` reference
+     * truncates here, which can admit one insertion too many when
+     * `delta * capacity` is fractional; the level/bucket sizes still match it.)
+     */
+    val maxInserts: Int = capacity - ceil(delta * capacity).toInt()
 
     /** Number of primary levels, `ceil(4 * log2(1/delta) + 10)`. */
     val alpha: Int = ceil(4 * log2(1.0 / delta) + 10).toInt()

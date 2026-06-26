@@ -27,11 +27,15 @@ publication-grade; authoritative baselines come from the `main` configuration
 |---|---|---|---|
 | `lookupHit` | 10 000 | ~30 100 | ~98 900 |
 | `lookupHit` | 1 000 000 | ~6 631 000 | ~17 750 000 |
-| `insertAll` | 10 000 | ~87 700 | ~338 300 |
-| `insertAll` | 1 000 000 | ~19 588 000 | ~42 040 000 |
+| `insertAllGrowing` | 10 000 | ~87 700 | ~338 300 |
+| `insertAllGrowing` | 1 000 000 | ~19 588 000 | ~42 040 000 |
 
-The Native stdlib map is ~3× slower than the JVM's here, confirming it is the
-more beatable baseline.
+The insert rows above are the **default-capacity** (`insertAllGrowing`) variant,
+which folds in resize/rehash cost. The fairness baseline a primitive map is
+compared against on steady-state insert speed is **`insertAllPresized`** (map
+pre-sized in its own units) — measured separately so a future map cannot meet the
+insert target merely by avoiding resize. The Native stdlib map is ~3× slower than
+the JVM's here, confirming it is the more beatable baseline.
 
 ## Success criteria
 

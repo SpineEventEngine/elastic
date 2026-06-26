@@ -26,6 +26,7 @@
 
 package io.spine.elastic.internal
 
+import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.log2
 import kotlin.math.max
@@ -51,11 +52,17 @@ internal object ElasticSizing {
 
     /**
      * The maximum number of insertions allowed into a table of [capacity] slots
-     * at target empty-fraction [delta] (so the table never exceeds load
-     * `1 - delta`).
+     * at target empty-fraction [delta], so the table never exceeds load
+     * `1 - delta`.
+     *
+     * Reserves `ceil(delta * capacity)` empty slots. This intentionally diverges
+     * from the `sternma` reference, which truncates (`int(delta * capacity)`) and
+     * so would admit one insertion too many when `delta * capacity` is fractional
+     * (e.g. capacity 1024, delta 0.1 reaches load 0.9004 > 0.9). The level sizes
+     * still match the reference exactly.
      */
     fun maxInserts(capacity: Int, delta: Double): Int =
-        capacity - (delta * capacity).toInt()
+        capacity - ceil(delta * capacity).toInt()
 
     /** The number of geometric levels for a table of [capacity] slots. */
     fun levelCount(capacity: Int): Int =

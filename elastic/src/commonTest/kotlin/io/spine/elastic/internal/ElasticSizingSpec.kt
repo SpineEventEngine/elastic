@@ -27,6 +27,7 @@
 package io.spine.elastic.internal
 
 import io.kotest.matchers.shouldBe
+import kotlin.math.ceil
 import kotlin.math.log2
 import kotlin.test.Test
 
@@ -62,9 +63,15 @@ internal class ElasticSizingSpec {
     }
 
     @Test
-    fun `computes max insertions from the target empty-fraction`() {
+    fun `reserves enough empty slots to honor the one-minus-delta load cap`() {
         ElasticSizing.maxInserts(1000, 0.1) shouldBe 900
-        ElasticSizing.maxInserts(1024, 0.1) shouldBe 922
+        // 0.1 * 1024 = 102.4 -> reserve ceil = 103 empty slots (not 102), so the
+        // load stays <= 1 - delta. Truncation would give 922 (load 0.9004 > 0.9).
+        ElasticSizing.maxInserts(1024, 0.1) shouldBe 921
+        for (capacity in listOf(1000, 1024, 4096, 65_536)) {
+            val reserved = capacity - ElasticSizing.maxInserts(capacity, 0.1)
+            reserved shouldBe ceil(0.1 * capacity).toInt()
+        }
     }
 
     @Test
