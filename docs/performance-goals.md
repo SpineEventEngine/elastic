@@ -2,14 +2,14 @@
 
 This document fixes what "much faster than the standard data structures" means
 for this project, so success is measurable rather than asserted. It is the
-yardstick for the benchmark matrix (plan §1.4, decision DP-4).
+yardstick for the project's benchmark matrix.
 
 ## Honest positioning
 
 The baseline we commit to beating is the **platform standard library**
 (`java.util.HashMap` on the JVM; the Kotlin/Native `HashMap`), **not** the
 best-in-class native maps (abseil / Rust `hashbrown`) — those are out of reach
-from common Kotlin (no SIMD, no off-heap; see plan §1.2). The win comes from
+from common Kotlin (no SIMD, no off-heap). The win comes from
 **open addressing + primitive specialization** (no boxing), not from any
 algorithmic novelty.
 

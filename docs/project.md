@@ -27,7 +27,7 @@ namesake structures honestly. See
 or Gradle plugin). It depends on the shared Spine `config` submodule for build
 conventions but has no runtime dependency on other Spine SDK modules.
 
-**Targets (DP-2):** JVM plus Kotlin/Native — `macosArm64`, `linuxX64`,
+**Targets:** JVM plus Kotlin/Native — `macosArm64`, `linuxX64`,
 `linuxArm64`, `mingwX64`, `iosArm64`, `iosSimulatorArm64`. JS and Wasm are
 deferred until there is demand, as the speed win is not credible there.
 
@@ -35,7 +35,7 @@ deferred until there is demand, as the speed win is not credible there.
 - `elastic` — the library. Public API lives in `io.spine.elastic`
   (e.g. `OpenAddressingLongMap<V>`, `LongHasher`/`fmix64`); sizing math from the
   paper lives in `io.spine.elastic.internal` (`ElasticSizing`, `FunnelSizing`).
-- `benchmarks` — a two-tier benchmark harness (DP-4): `kotlinx-benchmark`
+- `benchmarks` — a two-tier benchmark harness: `kotlinx-benchmark`
   driving real JMH on the JVM and host-native runs, with a raw-JMH JVM tier
   added when authoritative GC/allocation profiling is needed.
 - `config` — the shared Spine repository-configuration submodule.
@@ -52,12 +52,11 @@ deferred until there is demand, as the speed win is not credible there.
   Vector API is unreachable from common Kotlin and measured slower, so it stays
   an optional extra at most.
 - **Primitive specialization is the product.** A `value class` boxes the moment
-  it crosses a generic boundary, so specializations are hand-written first and
-  code-generated later via KSP (DP-7).
+  it crosses a generic boundary, so specializations are hand-written first, with
+  code generation a possible later step.
 - **Concurrency-aware cores.** Single-threaded structures are designed so a
-  single-writer / multi-reader, lock-free-read variant can be *derived*
-  (atomic table publication, immutable group snapshots), not retrofitted (DP-13,
-  a later phase).
+  single-writer / multi-reader, lock-free-read variant can be *derived* in a later
+  phase (atomic table publication, immutable group snapshots), not retrofitted.
 
 **Honest positioning (load-bearing):** the baseline this project commits to
 beating is the *platform standard library* (boxed `java.util.HashMap`; the
@@ -78,12 +77,12 @@ for the shared build stack, coding style, tests, and versioning policy that
 apply to the JVM target. Repo-specific notes that refine those defaults for this
 Kotlin Multiplatform codebase:
 - **Build:** Gradle with the Kotlin DSL; Kotlin is pinned to **2.3.21** with
-  **KSP 2.3.9** (DP-7a — KSP had no 2.4.0 release). Dependencies are declared via
+  **KSP 2.3.9** (KSP had no 2.4.0 release). Dependencies are declared via
   the `io.spine.dependency.*` `buildSrc` convention, not a version catalog.
-- **Tests (DP-5):** the bulk live in `commonTest` on the `kotlin.test` runner
+- **Tests:** the bulk live in `commonTest` on the `kotlin.test` runner
   with Kotest assertions (`kotest-assertions-core`) and `kotest-property`, so
   they run on JVM and Native. Suites are `internal` and `Spec`-suffixed; full
   JUnit 5 conventions (`@DisplayName`, `@Nested`) are used only in inherently
   JVM-only `jvmTest` suites.
 - **Static analysis & coverage:** detekt and Kover are wired as
-  KMP-compatible plugins (DP-3); Kover coverage is reported to Codecov.
+  KMP-compatible plugins; Kover coverage is reported to Codecov.

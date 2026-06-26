@@ -39,7 +39,6 @@ import kotlinx.benchmark.Scope
 import kotlinx.benchmark.Setup
 import kotlinx.benchmark.State
 import kotlinx.benchmark.Warmup
-import kotlin.random.Random
 
 /**
  * Measurements of the primitive [SwissLongMap] with `Long` keys and values, laid
@@ -121,23 +120,5 @@ class SwissLongMapBenchmark {
             fresh.put(key, key)
         }
         blackhole.consume(fresh)
-    }
-
-    private companion object {
-        /** Fixed seed so the shuffled lookup order is identical across maps and runs. */
-        const val SHUFFLE_SEED = 42L
-
-        /** Returns a deterministically shuffled copy of [keys] (Fisher–Yates). */
-        fun shuffle(keys: LongArray): LongArray {
-            val out = keys.copyOf()
-            val random = Random(SHUFFLE_SEED)
-            for (i in out.indices.reversed()) {
-                val j = random.nextInt(i + 1)
-                val tmp = out[i]
-                out[i] = out[j]
-                out[j] = tmp
-            }
-            return out
-        }
     }
 }
