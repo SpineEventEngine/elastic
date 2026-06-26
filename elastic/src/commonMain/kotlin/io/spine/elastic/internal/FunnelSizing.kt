@@ -53,6 +53,8 @@ import kotlin.math.roundToInt
  * @param capacity total number of slots; must be positive
  * @param delta target empty-fraction; must be in `(0, 1)`
  */
+@Suppress("MagicNumber") // The factors (4, 2, 3/4, 0.75, +10) are the funnel
+// sizing constants transcribed from the paper; naming them adds no clarity.
 internal class FunnelSizing(val capacity: Int, val delta: Double) {
 
     init {

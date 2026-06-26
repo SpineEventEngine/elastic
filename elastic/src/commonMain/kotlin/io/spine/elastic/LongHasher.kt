@@ -58,6 +58,8 @@ public fun interface LongHasher {
  * allocation-free avalanche mix that makes every input bit affect every output
  * bit. The two multiplier constants are the published MurmurHash3 values.
  */
+@Suppress("MagicNumber") // The two multipliers and the 33-bit shift are the
+// published MurmurHash3 finalizer constants; naming them adds no clarity.
 public fun fmix64(key: Long): Long {
     var h = key
     h = h xor (h ushr 33)

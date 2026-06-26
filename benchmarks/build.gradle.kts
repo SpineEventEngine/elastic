@@ -26,10 +26,17 @@
 
 import kotlinx.benchmark.gradle.BenchmarkConfiguration
 
+// A benchmark harness, not a published library, so it does NOT apply the
+// `kmp-module` convention (which adds `explicitApi` and the JVM test stack).
+// It applies the Kotlin Multiplatform plugin (from the `buildSrc` classpath)
+// directly, plus `kotlinx-benchmark`. Repositories, group, version, and Dokka
+// come from the root `allprojects` block (config convention).
 plugins {
     kotlin("multiplatform")
-    alias(libs.plugins.benchmark)
-    alias(libs.plugins.kotlin.allopen)
+    id("org.jetbrains.kotlinx.benchmark") version "0.4.17"
+    // Version pinned to config's Kotlin (io.spine.dependency.lib.Kotlin) — the
+    // plugins block can't reference buildSrc objects.
+    kotlin("plugin.allopen") version "2.3.21"
 }
 
 // `kotlinx-benchmark` generates JMH harness classes that subclass the `@State`
@@ -44,17 +51,14 @@ kotlin {
     jvm()
     jvmToolchain(17)
 
-    // Benchmark on the JVM (authoritative, JMH) and the host plus the primary
-    // server target. The raw-JMH tier for GC/alloc profiling is a separate
-    // module added when first needed (plan DP-4).
     macosArm64()
     linuxX64()
 
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(project(":elastic"))
-                implementation(libs.kotlinx.benchmark.runtime)
+                implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.17")
             }
         }
     }

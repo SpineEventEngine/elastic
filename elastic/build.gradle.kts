@@ -24,42 +24,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+@file:Suppress("unused") // Source set `val`s are used implicitly.
+
+import io.spine.dependency.kotlinx.Coroutines
+import io.spine.dependency.test.Kotest
+
 plugins {
-    kotlin("multiplatform")
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.kover)
-    alias(libs.plugins.detekt)
-}
-
-// KSP is applied here so the codegen toolchain is in place from the start
-// (DP-7 / DP-7a). The processor that generates the primitive specialization
-// matrix — and the `ksp(...)` wiring per target — arrives in Phase 1.
-
-detekt {
-    // Lexical/AST analysis only (no type-resolution classpath) to stay decoupled
-    // from the KMP compile outputs and the tooling-version lag (see plan DP-3).
-    buildUponDefaultConfig = true
-    parallel = true
-    config.setFrom(rootProject.file("gradle/detekt.yml"))
-    // The default source roots are the JVM-style `src/main`/`src/test`, which a
-    // KMP module does not use; point detekt at the multiplatform source sets.
-    source.setFrom(
-        "src/commonMain/kotlin",
-        "src/commonTest/kotlin",
-        "src/jvmMain/kotlin",
-        "src/jvmTest/kotlin",
-        "src/nativeMain/kotlin",
-        "src/nativeTest/kotlin",
-    )
+    `kmp-module`
 }
 
 kotlin {
-    jvm()
-    jvmToolchain(17)
-
-    // Native targets (DP-2: JVM + Native). The Kotlin default hierarchy template
-    // creates the shared `nativeMain`/`nativeTest` (and `appleMain`) source sets
-    // used for the `expect`/`actual` seams introduced in later phases.
+    // `kmp-module` configures the JVM target plus the common/JVM test stack
+    // (`kotlin.test` + Kotest). Add the Native targets on top (decision DP-2).
+    // KSP (DP-7) is re-applied in Phase 1 when the generator module exists.
     macosArm64()
     linuxX64()
     linuxArm64()
@@ -68,12 +45,16 @@ kotlin {
     iosSimulatorArm64()
 
     sourceSets {
-        commonTest {
+        val commonTest by getting {
             dependencies {
+                // DP-5: tests use the `kotlin.test` runner with Kotest assertions.
+                // `kmp-module` wires the Kotest framework engine, so add the
+                // multiplatform `kotlin.test` artifact for the `@Test` runner.
                 implementation(kotlin("test"))
-                implementation(libs.kotest.assertions.core)
-                implementation(libs.kotest.property)
-                implementation(libs.kotlinx.coroutines.test)
+                implementation("io.kotest:kotest-property:${Kotest.version}")
+                implementation(
+                    "org.jetbrains.kotlinx:kotlinx-coroutines-test:${Coroutines.version}"
+                )
             }
         }
     }

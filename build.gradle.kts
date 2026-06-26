@@ -24,16 +24,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import io.spine.dependency.build.Dokka
+import io.spine.gradle.repo.standardToSpineSdk
+import io.spine.gradle.report.license.LicenseReporter
+import io.spine.gradle.report.pom.PomGenerator
+
 plugins {
-    alias(libs.plugins.kotlin.multiplatform) apply false
+    id("org.jetbrains.dokka")
+    idea
+    `project-report`
+}
+
+apply(from = "$rootDir/version.gradle.kts")
+
+repositories {
+    standardToSpineSdk()
 }
 
 allprojects {
-    apply(from = "$rootDir/version.gradle.kts")
+    apply(plugin = Dokka.GradlePlugin.id)
     group = "io.spine"
     version = rootProject.extra["versionToPublish"]!!
 
     repositories {
-        mavenCentral()
+        standardToSpineSdk()
     }
+}
+
+gradle.projectsEvaluated {
+    LicenseReporter.mergeAllReports(project)
+    PomGenerator.applyTo(project)
 }
