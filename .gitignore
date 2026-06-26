@@ -193,8 +193,11 @@ docs/_preview/resources/
 # Ignore Gradle project-specific cache directory
 .gradle
 
-# Ignore Gradle build output directory
-build
+# Ignore the root Gradle build output directory only. A bare `build` also
+# ignored nested `build/` source packages such as `io.spine.dependency.build`
+# in the vendored `buildSrc`; the shared `**/build/**` + `!**/src/**/build/**`
+# rules above already ignore build outputs while keeping such sources.
+/build
 
 # Ignore Kotlin plugin data
 .kotlin
