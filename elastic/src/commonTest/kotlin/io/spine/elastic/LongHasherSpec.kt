@@ -59,4 +59,19 @@ internal class LongHasherSpec {
         }
         hashes.size shouldBe 10_000
     }
+
+    @Test
+    fun `multiplies by the golden ratio in the Fibonacci hasher`() {
+        LongHasher.Fibonacci.hash(0L) shouldBe 0L
+        LongHasher.Fibonacci.hash(1L) shouldBe -7046029254386353131L
+    }
+
+    @Test
+    fun `spreads sequential keys distinctly through the Fibonacci hasher`() {
+        val hashes = HashSet<Long>()
+        for (key in 0L until 10_000L) {
+            hashes.add(LongHasher.Fibonacci.hash(key))
+        }
+        hashes.size shouldBe 10_000
+    }
 }

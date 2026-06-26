@@ -36,6 +36,7 @@ internal class LongLongMapSpec {
     fun `starts empty and reports the default absent value`() {
         val map = LongLongMap()
         map.size shouldBe 0
+        map.isEmpty shouldBe true
         map.absentValue shouldBe 0L
         map[42L] shouldBe 0L
         map.containsKey(42L) shouldBe false
@@ -178,8 +179,10 @@ internal class LongLongMapSpec {
         for (key in 0L until 100L) {
             map.put(key, key)
         }
+        map.isEmpty shouldBe false
         map.clear()
         map.size shouldBe 0
+        map.isEmpty shouldBe true
         map[0L] shouldBe 0L
 
         map.put(1L, 1L)

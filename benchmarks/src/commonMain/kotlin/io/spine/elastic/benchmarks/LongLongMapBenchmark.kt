@@ -26,6 +26,7 @@
 
 package io.spine.elastic.benchmarks
 
+import io.spine.elastic.LongHasher
 import io.spine.elastic.LongLongMap
 import kotlinx.benchmark.Benchmark
 import kotlinx.benchmark.BenchmarkMode
@@ -64,6 +65,7 @@ class LongLongMapBenchmark {
     private var keys: LongArray = LongArray(0)
     private var shuffledKeys: LongArray = LongArray(0)
     private var map: LongLongMap = LongLongMap()
+    private var fastHashMap: LongLongMap = LongLongMap()
 
     @Setup
     fun setup() {
@@ -75,6 +77,13 @@ class LongLongMapBenchmark {
             prepared.put(key, key)
         }
         map = prepared
+        // Same map but with the single-multiply Fibonacci hasher instead of the
+        // default fmix64 (two multiplies) — to quantify the hash's in-cache cost.
+        val fast = LongLongMap(expectedSize = n, hasher = LongHasher.Fibonacci)
+        for (key in keys) {
+            fast.put(key, key)
+        }
+        fastHashMap = fast
     }
 
     @Benchmark
@@ -90,6 +99,16 @@ class LongLongMapBenchmark {
     @Benchmark
     fun lookupHitShuffled(blackhole: Blackhole) {
         val m = map
+        var sink = 0L
+        for (key in shuffledKeys) {
+            sink += m[key]
+        }
+        blackhole.consume(sink)
+    }
+
+    @Benchmark
+    fun lookupHitShuffledFastHash(blackhole: Blackhole) {
+        val m = fastHashMap
         var sink = 0L
         for (key in shuffledKeys) {
             sink += m[key]

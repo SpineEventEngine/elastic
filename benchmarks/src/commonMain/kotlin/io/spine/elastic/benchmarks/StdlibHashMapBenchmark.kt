@@ -47,8 +47,8 @@ import kotlin.random.Random
  * This is the bar the Phase 1 primitive `Long → V` map must beat (and the proof
  * that the cross-platform harness works end-to-end). It runs on JVM (via JMH)
  * and on Kotlin/Native, so the per-platform baselines are captured from the
- * outset. Operations are deliberately separate (decision DP-4 / §1.4 of the
- * plan): `lookupHit`; `insertAllPresized` — the fair, steady-state insert
+ * outset. Operations are deliberately separate (per the benchmark methodology):
+ * `lookupHit`; `insertAllPresized` — the fair, steady-state insert
  * baseline, with the map pre-sized in its own units (capacity for `size` entries
  * at the JDK load factor) as the fairness gate requires; and `insertAllGrowing` —
  * the same inserts into a default-capacity map, isolating resize/rehash cost.

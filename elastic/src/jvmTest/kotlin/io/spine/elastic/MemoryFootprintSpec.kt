@@ -37,10 +37,10 @@ import kotlin.test.Test
  *
  * Footprint is the exact retained size of each map's whole object graph, computed by
  * JOL ([GraphLayout.totalSize]) on the JVM — deterministic, not a GC estimate. Each
- * map is pre-sized for `n` in its own units (the §1.4 fairness gate), and `n` is the
- * `7/8` max load of a `2^18`-slot open-addressing table, so the comparison is at a
- * realistic, equal-occupancy point. Numbers are written to the scratchpad for
- * reporting; the asserted ordering is what the test guards.
+ * map is pre-sized for `n` in its own units (the per-map pre-sizing fairness rule),
+ * and `n` is the `7/8` max load of a `2^18`-slot open-addressing table, so the
+ * comparison is at a realistic, equal-occupancy point. Numbers are written to the
+ * scratchpad for reporting; the asserted ordering is what the test guards.
  */
 internal class MemoryFootprintSpec {
 

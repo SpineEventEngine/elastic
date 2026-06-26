@@ -38,10 +38,10 @@ import io.spine.elastic.internal.Swar
  * is the true primitive-versus-primitive counterpart of `java.util.HashMap<Long,
  * Long>`. It shares the control-word layout, SWAR scan ([Swar]), group-aligned
  * triangular probing, simple tombstones, and `7/8`-load resize/rehash of
- * [SwissLongMap]; only the value storage and the absent-key protocol differ. (The
- * near-duplication of the two maps is what the planned code generation, decision
- * DP-7, exists to remove; this second hand-written specialization is its prototype
- * input.)
+ * [SwissLongMap]; only the value storage and the absent-key protocol differ. (That
+ * near-duplication is small enough to keep two hand-written maps for now; collapsing
+ * them — via a shared base or code generation — is deferred until a third
+ * specialization exists.)
  *
  * ### Absent keys
  *
@@ -54,9 +54,9 @@ import io.spine.elastic.internal.Swar
  *
  * ### Concurrency
  *
- * Single-threaded (decision DP-13), exactly as [SwissLongMap]: no synchronization,
- * concurrent mutation undefined, but structured (single-field-swap resize; key and
- * value written before the control byte) so the lock-free-read variant is derivable.
+ * Single-threaded, exactly as [SwissLongMap]: no synchronization, concurrent mutation
+ * undefined, but structured (single-field-swap resize; key and value written before
+ * the control byte) so a future lock-free-read variant is derivable.
  *
  * @param expectedSize a hint for the number of entries, used to pre-size the table
  *        so that holding that many entries needs no resize; defaults to empty
@@ -78,6 +78,10 @@ public class LongLongMap public constructor(
     /** The number of key-value pairs currently stored. */
     public val size: Int
         get() = entryCount
+
+    /** Tells whether the map contains no entries. */
+    public val isEmpty: Boolean
+        get() = entryCount == 0
 
     /** Returns the value associated with [key], or [absentValue] if the key is absent. */
     public operator fun get(key: Long): Long {
@@ -153,7 +157,7 @@ public class LongLongMap public constructor(
         }
         val previous = current.values[slot]
         // A tombstone keeps the probe chain intact; occupancy is unchanged, so
-        // `growthLeft` is not credited back until a rebuild reclaims it (DP-8).
+        // `growthLeft` is not credited back until a rebuild reclaims the tombstone.
         val group = slot ushr Swar.GROUP_SHIFT
         current.control[group] =
             Swar.withLane(current.control[group], slot and Swar.LANE_MASK, Swar.DELETED)
@@ -255,10 +259,7 @@ public class LongLongMap public constructor(
         val current = tables
         val capacity = current.capacity
         val newCapacity = if (entryCount.toLong() > Capacity.rehashThreshold(capacity)) {
-            require(capacity < Capacity.MAX) {
-                "Map exceeded the maximum capacity of ${Capacity.MAX} slots."
-            }
-            capacity * 2
+            Capacity.grown(capacity)
         } else {
             capacity
         }

@@ -28,6 +28,7 @@
 
 import io.spine.dependency.kotlinx.AtomicFu
 import io.spine.dependency.kotlinx.Coroutines
+import io.spine.dependency.test.Jol
 import io.spine.dependency.test.Kotest
 import io.spine.gradle.report.license.LicenseReporter
 
@@ -70,7 +71,7 @@ kotlin {
                 // JOL (Java Object Layout) — used only by the retained-footprint
                 // measurement (`MemoryFootprintSpec`) to size each map's object
                 // graph exactly, on the JVM. Test-scoped; not a published dependency.
-                implementation("org.openjdk.jol:jol-core:0.17")
+                implementation(Jol.lib)
             }
         }
     }

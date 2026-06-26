@@ -23,8 +23,8 @@ eliminating boxing buys a large **footprint** reduction (and far less
 allocation/GC) much more than it buys raw lookup nanoseconds. The fully-primitive
 `Long → Long` map retains **~4.7×** less heap than `HashMap<Long, Long>` and is
 competitive-to-faster on time **at scale**; in-cache it can trail `HashMap`
-slightly, because the SWAR + finalizer arithmetic is extra work the chained map
-avoids. The Phase-1 criteria below are therefore stated as **memory + at-scale
+slightly, because the SWAR + `fmix64` arithmetic is extra work the chained map
+avoids. The Phase 1 criteria below are therefore stated as **memory + at-scale
 time**, not a lookup-speed multiple.
 
 ## Phase 0 baseline snapshot (indicative)
@@ -61,6 +61,10 @@ the JVM's here, confirming it is the more beatable baseline.
   presized insert; ≈ parity at 1M insert.*
 - **No material regression.** Never slower than stdlib by more than **~15 %** on any
   core op at any size; the known weak spot is in-cache lookup (measured ~14 %).
+- **Optional faster hasher.** `LongHasher.Fibonacci` (single multiply) trades
+  adversarial-key robustness for ~27–29 % lower hash cost (a stable, same-run figure);
+  with it the primitive map's random-access lookup comfortably beats `HashMap` at both
+  sizes. The default `fmix64` stays the safe choice for untrusted keys.
 - **Native.** The same common code runs on Kotlin/Native; report per-platform
   numbers (the Native `HashMap` is the more beatable baseline).
 - **Retired:** the former "≥ 2× faster on `lookupHit`" target — undercut by JVM

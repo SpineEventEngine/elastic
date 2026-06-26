@@ -50,6 +50,29 @@ public fun interface LongHasher {
          * short.
          */
         public val Default: LongHasher = LongHasher(::fmix64)
+
+        /**
+         * A faster single-multiply Fibonacci (Knuth multiplicative) hash —
+         * `key *` the golden-ratio constant `0x9E3779B97F4A7C15`.
+         *
+         * It costs one multiply versus [Default]'s two, which measurably speeds
+         * lookups and inserts (the hash is a real fraction of the in-cache cost).
+         * The trade-off is robustness: a single multiply does **not** avalanche the
+         * low bits, so structured key sets — for example keys that are all multiples
+         * of a large power of two — collapse onto few groups and lengthen probe
+         * chains, exactly the case [Default] guards against. Prefer it only when keys
+         * are known to be well distributed (random or sequential ids); keep [Default]
+         * when the key source is untrusted.
+         */
+        public val Fibonacci: LongHasher = LongHasher { key -> key * GOLDEN_RATIO }
+
+        /**
+         * The standard Fibonacci-hashing multiplier `0x9E3779B97F4A7C15`
+         * (≈ `2^64 / golden ratio`, forced odd), written as a negative literal
+         * because the value exceeds [Long.MAX_VALUE].
+         */
+        @Suppress("MagicNumber")
+        private const val GOLDEN_RATIO: Long = -0x61C8864680B583EBL
     }
 }
 

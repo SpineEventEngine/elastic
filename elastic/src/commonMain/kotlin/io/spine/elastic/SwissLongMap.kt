@@ -33,9 +33,9 @@ import io.spine.elastic.internal.Swar
  * A SwissTable-style open-addressing map from primitive `Long` keys to values of
  * type [V].
  *
- * This is the lead specialization of the library (decision DP-6) and the Phase 1
- * proof that primitive specialization beats the boxing standard-library `HashMap`:
- * keys live in a `LongArray`, so neither lookups nor insertions box a key.
+ * This is the lead specialization of the library and the Phase 1 proof that
+ * primitive specialization beats the boxing standard-library `HashMap`: keys live in
+ * a `LongArray`, so neither lookups nor insertions box a key.
  *
  * ### Layout
  *
@@ -49,13 +49,13 @@ import io.spine.elastic.internal.Swar
  * The probe is group-aligned: it starts at the home group and advances by a
  * triangular, group-strided sequence that visits every group of a power-of-two
  * table exactly once, so it always reaches an empty slot and terminates. The load
- * factor is kept at `7/8`. Deletion writes a tombstone (decision DP-8); tombstones
- * are reclaimed only when the table is rebuilt, either in place at the same
- * capacity (when most occupancy is tombstones) or by doubling (decision DP-9).
+ * factor is kept at `7/8`. Deletion writes a tombstone; tombstones are reclaimed
+ * only when the table is rebuilt, either in place at the same capacity (when most
+ * occupancy is tombstones) or by doubling.
  *
  * ### Concurrency
  *
- * This implementation is **single-threaded** (decision DP-13): there is no
+ * This implementation is **single-threaded**: there is no
  * synchronization, and concurrent mutation is undefined. The storage is kept in one
  * immutable storage holder swapped by a single field write on resize, and inserts
  * publish a slot's key and value before its control byte — structural seams that let
@@ -141,7 +141,7 @@ public class SwissLongMap<V> public constructor(
         }
         val previous = current.valueAt(slot)
         // A tombstone keeps the probe chain intact; occupancy is unchanged, so
-        // `growthLeft` is not credited back until a rebuild reclaims it (DP-8).
+        // `growthLeft` is not credited back until a rebuild reclaims the tombstone.
         val group = slot ushr Swar.GROUP_SHIFT
         current.control[group] =
             Swar.withLane(current.control[group], slot and Swar.LANE_MASK, Swar.DELETED)
@@ -243,10 +243,7 @@ public class SwissLongMap<V> public constructor(
         val current = tables
         val capacity = current.capacity
         val newCapacity = if (entryCount.toLong() > Capacity.rehashThreshold(capacity)) {
-            require(capacity < Capacity.MAX) {
-                "Map exceeded the maximum capacity of ${Capacity.MAX} slots."
-            }
-            capacity * 2
+            Capacity.grown(capacity)
         } else {
             capacity
         }

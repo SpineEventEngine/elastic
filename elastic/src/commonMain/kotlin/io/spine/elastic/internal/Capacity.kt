@@ -61,6 +61,12 @@ internal object Capacity {
     /** The maximum number of entries a table of [capacity] slots holds. */
     fun maxLoad(capacity: Int): Int = capacity - capacity / LOAD_DEN
 
+    /** The next (doubled) capacity for a grow, failing if already at [MAX]. */
+    fun grown(capacity: Int): Int {
+        require(capacity < MAX) { "Map exceeded the maximum capacity of $MAX slots." }
+        return capacity * 2
+    }
+
     /** Above this many live entries, a rebuild grows instead of rehashing in place. */
     fun rehashThreshold(capacity: Int): Long =
         capacity.toLong() * REHASH_NUM / REHASH_DEN

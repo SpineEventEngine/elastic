@@ -35,12 +35,16 @@
   resize+rehash. Funnel/elastic are a single growable type that can be pre-sized to a
   target (n, δ) for the predictable regime and auto-rebuilds (O(n), transient ~2×
   memory) if exceeded.
-- **DP-7 — DECIDED: KSP code-gen from the start.** Stand up a KSP-based generator that
-  produces the specialization matrix from one template. Practical sequencing:
-  hand-write `Long→V` as the reference prototype, then templatize it and regenerate it
-  from the generator so the pipeline is proven on the first type. *(Exact mechanism —
-  KSP processor vs Gradle template-expansion task — finalized in Phase 0/1; both emit
-  generated Kotlin into the source sets.)*
+- **DP-7 — RECONSIDERED (2026-06, Phase 1): codegen *and* structural dedup DEFERRED.**
+  Original decision was "KSP code-gen from the start" (hand-write `Long→V`, then templatize).
+  Phase 1 shipped two hand-written maps (`Long→V`, `Long→Long`) and showed: Kotlin generics
+  box, so each value specialization needs a concrete class — but at *two* maps the duplication
+  is small and the algorithmic core is already shared (`Swar`, `Capacity`). A shared abstract
+  base is viable but moderate-risk (type-erased value storage + a write-order callback for the
+  DP-13 seam + detekt function-count), and codegen is a large permanent tax (processor module,
+  generated sources, build/IDE friction) that only pays at the fastutil/HPPC matrix scale.
+  **Decision: keep the hand-written maps; revisit base-vs-codegen only when a 3rd
+  specialization appears** (then there are enough concrete examples to choose with data).
 - **DP-11 — DECIDED: internal metrics now, public inspection API later.** Probe-count
   instrumentation feeds CI bound-verification from day one; a read-only public
   inspection API is promoted in a later phase once its shape is clear.

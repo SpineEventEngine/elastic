@@ -96,11 +96,16 @@ met and should be retired or re-scoped to memory + at-scale time.**
 
 - **Version gate:** bump `version.gradle.kts` above base before opening the PR (currently
   `1.0.0-SNAPSHOT-002`; non-breaking) via the `bump-version` skill.
-- **In-cache hot-path tuning (optional):** in-cache, the maps do more arithmetic per op
-  (`fmix64`'s two multiplies + the SWAR broadcast) than `HashMap`. A cheaper finalizer or an
-  inlined default-hasher path may close the small in-cache lookup gap; unlikely to reach 2×.
-- **KSP generator (DP-7):** `SwissLongMap` and `LongLongMap` share everything but value storage
-  and the absent-key protocol — that near-duplication is exactly what the generator should emit
-  from one template, with these two as the prototype inputs.
+- **In-cache hot-path tuning — DONE (2026-06).** Quantified that `fmix64` (two multiplies) is
+  ~27-29% of lookup time. Added the opt-in `LongHasher.Fibonacci` (single-multiply Knuth hash);
+  the default stays `fmix64` (adversarial-safe). With `Fibonacci`, `LongLongMap` random-access
+  lookup is **25,981 ns @10K / 12,140,271 ns @1M** — **~27-29% faster than `fmix64`** (a stable,
+  same-run figure), which makes it comfortably beat `HashMap` at both sizes; the exact multiple
+  versus `HashMap` varies with its noisy shuffled-lookup baseline (~1.2-1.6× across runs).
+- **Dedup / codegen (DP-7) — DEFERRED (2026-06).** The two maps share everything but value
+  storage + the absent-key protocol, but at two specializations the duplication is small and
+  `Swar`/`Capacity` already factor the core. A shared abstract base is viable but moderate-risk
+  (type-erased value storage, a write-order callback, detekt function-count). Decision: keep
+  both hand-written; revisit base-vs-codegen when a *3rd* specialization appears. See plan DP-7.
 - **Memory metric note:** footprint is measured exactly with JOL (`MemoryFootprintSpec`); a
   `-prof gc` allocation-rate tier (DP-4) was not needed to establish the win and remains optional.
