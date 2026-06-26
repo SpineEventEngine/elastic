@@ -60,6 +60,15 @@ kotlin {
                 )
             }
         }
+        val jvmTest by getting {
+            dependencies {
+                // Bind `kotlin.test` to JUnit 5 on the JVM so `kotlin.test.Test`
+                // resolves at compile time regardless of the framework
+                // auto-detection (which resolves locally but not in CI's clean
+                // environment); kmp-module already wires the JUnit 5 engine.
+                implementation(kotlin("test-junit5"))
+            }
+        }
     }
 }
 
@@ -71,4 +80,10 @@ configurations.all {
     resolutionStrategy {
         force(AtomicFu.lib)
     }
+}
+
+// `kmp-module` wires the JUnit 5 engine for the JVM target; select the JUnit
+// Platform so the JVM test task runs it (and `kotlin.test` binds to JUnit 5).
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
