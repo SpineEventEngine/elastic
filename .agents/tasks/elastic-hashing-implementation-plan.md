@@ -415,6 +415,28 @@ ready to scope into tasks.
 differential-tested against the oracles, with probe-count instrumentation that turns
 the paper's bounds into CI assertions.
 
+**Status — IMPLEMENTED** (branch `phase-2`); details in
+[`phase-2-funnel.md`](phase-2-funnel.md). Green on JVM + host Native (tests, detekt,
+Kover — `FunnelLongMap` 97% line, `FunnelCapacity` 100%). One build fix was needed:
+`force(Base.annotations)` in `elastic/build.gradle.kts` aligns a stale transitive
+`spine-annotations` (pulled by `base-testlib`) to `Base`'s pinned, cached version.
+- `FunnelLongMap<V>` (implements `OpenAddressingLongMap<V>`) — clean-room funnel hashing,
+  reusing `FunnelSizing` verbatim. **Greedy descent + special overflow array**; insert is
+  **lookup-then-place** (prevents cross-level duplicate keys under tombstones — a bug an
+  adversarial pre-implementation design review caught); search is **stop-on-empty**
+  (the first empty slot proves absence). Simple per-slot occupancy `ByteArray`, **not** SWAR
+  (β-sized buckets are sub-group). Tombstone deletion (DP-8 spirit); rebuild-on-grow with a
+  re-double loop that always grows on *structural* overflow (DP-9). `delta` is a public,
+  fixed-for-life constructor knob (default `0.1`).
+- New `internal FunnelCapacity` (doubling from `MIN=64`, sized by `maxInserts`) — funnel
+  capacity is not power-of-two, so `Capacity` cannot be reused.
+- Probe-count instrumentation (DP-11): `internal lastProbes`/`maxProbesPerOp` feed
+  `FunnelLongMapProbeBoundSpec`, asserting the `O(log² 1/δ)` ceiling
+  (`levelCount*beta + specialProbeLimit + 2`).
+- Differential tests vs `LinkedHashMap`; `FunnelLongMapBenchmark` (delta 0.1 + high-load 0.01).
+- **Funnel is hash-sensitive by design:** a hasher defeating the per-level salts throws
+  loudly rather than looping/OOM-ing; documented (use `SwissLongMap` for adversarial keys).
+
 **Deliverables**
 - Clean-room `FunnelHashTable` from §5 of the paper (α levels of β-sized buckets +
   overflow array), reusing Phase-1 storage primitives where sensible.
