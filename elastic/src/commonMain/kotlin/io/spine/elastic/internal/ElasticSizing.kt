@@ -45,8 +45,8 @@ import kotlin.math.min
 internal object ElasticSizing {
 
     /**
-     * The probe-budget constant `c` (decision DP-12: port the paper's constant
-     * first, then tune empirically). The reference uses `4`.
+     * The probe-budget constant `c`, ported from the paper (the reference uses `4`)
+     * and to be tuned empirically against the oracles and probe-count metrics.
      */
     const val PROBE_BUDGET: Int = 4
 

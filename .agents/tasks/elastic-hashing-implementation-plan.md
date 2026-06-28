@@ -35,12 +35,16 @@
   resize+rehash. Funnel/elastic are a single growable type that can be pre-sized to a
   target (n, δ) for the predictable regime and auto-rebuilds (O(n), transient ~2×
   memory) if exceeded.
-- **DP-7 — DECIDED: KSP code-gen from the start.** Stand up a KSP-based generator that
-  produces the specialization matrix from one template. Practical sequencing:
-  hand-write `Long→V` as the reference prototype, then templatize it and regenerate it
-  from the generator so the pipeline is proven on the first type. *(Exact mechanism —
-  KSP processor vs Gradle template-expansion task — finalized in Phase 0/1; both emit
-  generated Kotlin into the source sets.)*
+- **DP-7 — RECONSIDERED (2026-06, Phase 1): codegen *and* structural dedup DEFERRED.**
+  Original decision was "KSP code-gen from the start" (hand-write `Long→V`, then templatize).
+  Phase 1 shipped two hand-written maps (`Long→V`, `Long→Long`) and showed: Kotlin generics
+  box, so each value specialization needs a concrete class — but at *two* maps the duplication
+  is small and the algorithmic core is already shared (`Swar`, `Capacity`). A shared abstract
+  base is viable but moderate-risk (type-erased value storage + a write-order callback for the
+  DP-13 seam + detekt function-count), and codegen is a large permanent tax (processor module,
+  generated sources, build/IDE friction) that only pays at the fastutil/HPPC matrix scale.
+  **Decision: keep the hand-written maps; revisit base-vs-codegen only when a 3rd
+  specialization appears** (then there are enough concrete examples to choose with data).
 - **DP-11 — DECIDED: internal metrics now, public inspection API later.** Probe-count
   instrumentation feeds CI bound-verification from day one; a read-only public
   inspection API is promoted in a later phase once its shape is clear.
@@ -120,18 +124,18 @@ The user's bar is *"standard data structures provided by Kotlin JVM and other
 platforms"*, i.e. **stdlib**, not the specialist libraries. But reviewers will ask
 about the specialists, so we must know where they sit.
 
-| Library | Probing / layout | Primitive maps | License | Maintained (2026) | Note |
-|---|---|---|---|---|---|
-| **java.util.HashMap** (= Kotlin JVM `HashMap`, a `typealias`) | separate chaining + treeify, LF 0.75 | no (boxes) | — | n/a (JDK) | **the baseline to beat** |
-| Kotlin **Native/Wasm** `HashMap` | open addressing, linear probing, tombstones | no (boxes) | — | n/a (stdlib) | **the baseline on those targets** |
-| **fastutil** | linear probing, parallel arrays, LF 0.75 | yes (build-time codegen) | Apache-2.0 | **active** (8.5.18) | broadest coverage; the default people reach for |
-| **HPPC** | linear probing | yes (template codegen) | Apache-2.0 | active (slow cadence) | **≈ fastutil speed (within ~2 %)** |
-| **Koloboke** | interleaved key/value array | yes | Apache-2.0 | **abandoned since 2016** | best published cache-bound throughput, but dead |
-| **Eclipse Collections** | open addressing | yes (StringTemplate codegen) | EDL-1.0 + EPL-1.0 | **very active** (13.0, 2025) | large API surface; heavyweight |
-| **Agrona** | linear probing, LF 0.55 | yes (hand-written, curated) | Apache-2.0 | very active | zero-allocation hot paths; HFT-grade |
-| **Trove** | open addressing | yes | **LGPL-2.1** | **abandoned (2012)** | **the actual slowest** in the cited bench |
-| **JCTools `NonBlockingHashMapLong`** | lock-free open addressing | `long` keys | Apache-2.0 | active | *concurrent*, different problem |
-| Apache Commons `Flat3Map` | switch dispatch ≤3 then HashMap | no | Apache-2.0 | active | tiny maps only |
+| Library                                                       | Probing / layout                            | Primitive maps               | License           | Maintained (2026)            | Note                                            |
+|---------------------------------------------------------------|---------------------------------------------|------------------------------|-------------------|------------------------------|-------------------------------------------------|
+| **java.util.HashMap** (= Kotlin JVM `HashMap`, a `typealias`) | separate chaining + treeify, LF 0.75        | no (boxes)                   | —                 | n/a (JDK)                    | **the baseline to beat**                        |
+| Kotlin **Native/Wasm** `HashMap`                              | open addressing, linear probing, tombstones | no (boxes)                   | —                 | n/a (stdlib)                 | **the baseline on those targets**               |
+| **fastutil**                                                  | linear probing, parallel arrays, LF 0.75    | yes (build-time codegen)     | Apache-2.0        | **active** (8.5.18)          | broadest coverage; the default people reach for |
+| **HPPC**                                                      | linear probing                              | yes (template codegen)       | Apache-2.0        | active (slow cadence)        | **≈ fastutil speed (within ~2 %)**              |
+| **Koloboke**                                                  | interleaved key/value array                 | yes                          | Apache-2.0        | **abandoned since 2016**     | best published cache-bound throughput, but dead |
+| **Eclipse Collections**                                       | open addressing                             | yes (StringTemplate codegen) | EDL-1.0 + EPL-1.0 | **very active** (13.0, 2025) | large API surface; heavyweight                  |
+| **Agrona**                                                    | linear probing, LF 0.55                     | yes (hand-written, curated)  | Apache-2.0        | very active                  | zero-allocation hot paths; HFT-grade            |
+| **Trove**                                                     | open addressing                             | yes                          | **LGPL-2.1**      | **abandoned (2012)**         | **the actual slowest** in the cited bench       |
+| **JCTools `NonBlockingHashMapLong`**                          | lock-free open addressing                   | `long` keys                  | Apache-2.0        | active                       | *concurrent*, different problem                 |
+| Apache Commons `Flat3Map`                                     | switch dispatch ≤3 then HashMap             | no                           | Apache-2.0        | active                       | tiny maps only                                  |
 
 **Corrected facts** (the kickoff report and early drafts got these wrong):
 
@@ -154,12 +158,12 @@ provable win.
 
 ### 1.2 Per-platform feasibility — where "much faster than stdlib" is real
 
-| Target | Primitive keys | Object keys | Lever | Confidence |
-|---|---|---|---|---|
-| **JVM** | **REALISTIC** (≈2–5× vs *boxed* `HashMap`) | **MARGINAL** (≈1.0–1.3×; break-even risk on read-heavy) | open addressing + primitive specialization + SWAR | high |
-| **Kotlin/Native** | **REALISTIC** | marginal–realistic | same; specialization *mandatory* (value classes box) | med-high |
-| **Kotlin/JS** | **UNLIKELY–MARGINAL** | **UNLIKELY** | hard to beat V8 native `Map`; only dense-Int via typed arrays | medium |
-| **Kotlin/Wasm** | marginal–realistic | marginal | WasmGC stable; **no reachable SIMD**; SWAR only; maturity in flux | med-low |
+| Target            | Primitive keys                             | Object keys                                             | Lever                                                             | Confidence |
+|-------------------|--------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------|------------|
+| **JVM**           | **REALISTIC** (≈2–5× vs *boxed* `HashMap`) | **MARGINAL** (≈1.0–1.3×; break-even risk on read-heavy) | open addressing + primitive specialization + SWAR                 | high       |
+| **Kotlin/Native** | **REALISTIC**                              | marginal–realistic                                      | same; specialization *mandatory* (value classes box)              | med-high   |
+| **Kotlin/JS**     | **UNLIKELY–MARGINAL**                      | **UNLIKELY**                                            | hard to beat V8 native `Map`; only dense-Int via typed arrays     | medium     |
+| **Kotlin/Wasm**   | marginal–realistic                         | marginal                                                | WasmGC stable; **no reachable SIMD**; SWAR only; maturity in flux | med-low    |
 
 Load-bearing constraints behind the table:
 
@@ -189,16 +193,16 @@ Load-bearing constraints behind the table:
 
 ### 1.3 Reference implementations — which to trust as oracles
 
-| Repo | Lang | Trust | Use |
-|---|---|---|---|
-| **`sternma/optopenhash`** | Python | **oracle** (105★, MIT, paper-faithful, tested) | primary correctness oracle |
-| **`aaron-ang/opthash-rs`** | Rust | **oracle** (Apache-2.0, both tables, SwissTable core, active) | secondary oracle + layout/growth reference |
-| `jorgik1/elastic-hash` (`open-elastic-hash`) | Python | cross-check only (7★, solo) | tertiary |
-| `joshuaisaact/elastic-hash` | Zig | benchmark intuition only (no funnel, no license) | the wall-clock evidence source |
-| `KarpelesLab/elastichash` | Go | **avoid** (AI-generated, **wrong author attribution**) | — |
-| `m-fire/platform-optimal-hash` | Kotlin | **avoid** (primitives only, not the tables, AI-derived) | — |
-| `MWARDUNI/ElasticHashing` | — | **does not exist** (404 confirmed) | — |
-| `devintegeritsm/KrapivinHashTable` | C# | API-ergonomics only (it's quadratic probing, *not* the paper) | — |
+| Repo                                         | Lang   | Trust                                                         | Use                                        |
+|----------------------------------------------|--------|---------------------------------------------------------------|--------------------------------------------|
+| **`sternma/optopenhash`**                    | Python | **oracle** (105★, MIT, paper-faithful, tested)               | primary correctness oracle                 |
+| **`aaron-ang/opthash-rs`**                   | Rust   | **oracle** (Apache-2.0, both tables, SwissTable core, active) | secondary oracle + layout/growth reference |
+| `jorgik1/elastic-hash` (`open-elastic-hash`) | Python | cross-check only (7★, solo)                                  | tertiary                                   |
+| `joshuaisaact/elastic-hash`                  | Zig    | benchmark intuition only (no funnel, no license)              | the wall-clock evidence source             |
+| `KarpelesLab/elastichash`                    | Go     | **avoid** (AI-generated, **wrong author attribution**)        | —                                          |
+| `m-fire/platform-optimal-hash`               | Kotlin | **avoid** (primitives only, not the tables, AI-derived)       | —                                          |
+| `MWARDUNI/ElasticHashing`                    | —      | **does not exist** (404 confirmed)                            | —                                          |
+| `devintegeritsm/KrapivinHashTable`           | C#     | API-ergonomics only (it's quadratic probing, *not* the paper) | —                                          |
 
 The report's **algorithm summary is faithful to the paper** (geometric levels; the
 `φ` injection; the non-greedy 3-case insertion with the real `δ/2` and `0.25`
@@ -364,6 +368,31 @@ here.
 **Goal:** ship one structure that *demonstrably* beats stdlib, and prove the storage
 foundation (control bytes + SWAR + primitive specialization).
 
+**Status — IMPLEMENTED** (branch `phase-1`); details in
+[`phase-1-swiss-long-map.md`](phase-1-swiss-long-map.md). Green on JVM + host Native,
+detekt + Kover (Swar 100%, SwissLongMap 98% line); reviewed by `kotlin-engineer`,
+`spine-code-review`, `review-docs`.
+- `SwissLongMap<V>` + `internal Swar`: **packed-`Long` control words** (8 control bytes per
+  `Long`, single-load SWAR — the `ByteArray` first cut was ~3–4× slower); **carry-free** SWAR
+  match (the borrow trick false-matches a neighbour); **group-aligned triangular** probing
+  (no cloned tail); **simple tombstones** (DP-8) with `7/8` load and a guaranteed-empty-lane
+  invariant; **resize+rehash** growth (DP-9); single-threaded (DP-13), structured for the
+  Phase-4 SWMR derivation. **KSP deferred** (DP-7) — hand-written `Long → V` only.
+- Also shipped the **fully-primitive `LongLongMap`** (`Long → Long`, values in a `LongArray`,
+  nothing boxed; fastutil-style `absentValue` API) and extracted shared `internal Capacity`
+  sizing. `LongLongMap` is the true primitive-vs-primitive peer of `HashMap<Long,Long>`.
+- **Result — memory-first win.** Exact retained heap (JOL): **`LongLongMap` 4.7× smaller** than
+  `HashMap<Long,Long>` (19 vs 89 bytes/entry), `SwissLongMap` 2.3× smaller. On **time** (fair
+  `lookupHitShuffled`), `LongLongMap` is **~1.24× faster at 1M** and ~1.16× on in-cache insert,
+  ties at 1M insert, but loses in-cache lookup; it never reaches **≥2×**. The 2× lookup-time
+  target did not land (the JIT escape-analyses away `HashMap`'s temporary lookup box; in-cache
+  arithmetic offsets gains). `SwissLongMap`'s value boxing makes its inserts ~4.7× slower than
+  `LongLongMap` — lead the speed story with the primitive-value form.
+- **Verdict:** "beats stdlib" is met **decisively on memory** and **modestly on time-at-scale**;
+  the **≥2× lookup-time criterion should be retired / re-scoped to memory + at-scale time**.
+- **Open follow-ups:** version bump (PR time); KSP generator (DP-7) to remove the
+  `SwissLongMap`/`LongLongMap` duplication; optional in-cache hot-path tuning.
+
 **Deliverables**
 - A **SwissTable/ScatterMap-style open-addressing map**: `ByteArray` control bytes
   (7-bit fingerprint + empty/deleted sentinels), single-`Long` 8-byte SWAR group scan,
@@ -452,22 +481,22 @@ baseline-qualified positioning; Maven Central publication.
 
 ## 5. Consolidated decision points
 
-| # | Decision | Recommendation | Why it matters |
-|---|---|---|---|
-| **DP-1** | **Strategy / phase ordering.** A) speed-first (SwissTable map Phase 1, elastic later); B) elastic-first (paper structures Phase 1); C) both in Phase 1. | **✅ DECIDED: A** | Determines whether the project's hard requirement is provable early, and how we position elastic. |
-| DP-2 | Target set. | **✅ DECIDED: JVM + Native only (for now);** add JS/Wasm later on demand | focuses the performance-credible targets; smaller surface, faster Phase 0 |
-| DP-3 | Build infra: adopt full Spine `config` conventions (buildSrc/module.gradle.kts, detekt, Kover) vs keep the lightweight `gradle init` setup | **✅ DECIDED: incremental** — detekt/Kover/copyright/version/Codecov as KMP-compatible plugins; no JVM-shaped `buildSrc/module.gradle.kts` forced onto KMP source sets | consistency with the org on static analysis/coverage/versioning, without KMP build yak-shaving |
-| DP-4 | Benchmark framework | **✅ DECIDED: two-tier** — `kotlinx-benchmark` (JVM + Native) + raw JMH (JVM profiling) | only credible KMP option; JMH for authoritative JVM/GC numbers |
-| DP-5 | Common test stack | **✅ DECIDED: common-first** — `kotlin.test` + `kotest-assertions-core`/`kotest-property` in `commonTest` (JVM + Native); `Spec`/`internal` naming everywhere; `@DisplayName`/`@Nested` only in JVM-only suites | reconciles KMP commonTest with Spine's Kotest/JUnit5 policy; maximizes shared coverage |
-| DP-6 | First specialization + build-vs-reuse | **✅ DECIDED: build our own, lead with `Long→V`**; `androidx.collection` is reference + bar, **not a dependency** | depending on androidx couples us to an Android-branded artifact whose non-Android KMP targets are *experimental* — against the "avoid immature dependencies" goal; we still validate that we match/beat it |
-| DP-7 | Specialization matrix mechanism | **✅ DECIDED: KSP code-gen from the start** — one template generates the matrix; hand-write `Long→V` as the prototype, then regenerate it from the generator | consistency + no source duplication at scale (fastutil/HPPC/Eclipse all code-gen) |
-| DP-8 | Deletion policy (Phase 1 map) | **✅ DECIDED: tombstones + rehash-on-growth** (DELETED control byte; reclaim on resize; rehash-in-place when mostly tombstones) | proven SwissTable/hashbrown approach; composes with control-byte SWAR scan. Funnel/elastic deletion is a separate Phase 2/3 decision |
-| DP-9 | Growth policy | **✅ DECIDED: growable, pre-sizable to (n, δ)** — Phase 1 map resize+rehash; funnel/elastic one growable type, pre-size for the predictable regime, auto-rebuild if exceeded | one type serves both predictable and ergonomic use; document the O(n) rebuild / transient 2× memory |
-| DP-10 | API depth | **✅ DECIDED: lean primitive API now; boxed `MutableMap<Long,V>` view in Phase 4** | hot path allocation-free; Map interop opt-in later |
-| DP-11 | Expose probe metrics | **✅ DECIDED: internal now (CI bound-verification); public read-only inspection API later** | keeps the bound-verification capability without committing public surface prematurely |
-| DP-12 | Elastic threshold constants | **✅ DECIDED: port paper constants, then tune empirically** against oracles + probe metrics | faithful baseline + practically validated; the public ports flag these as approximate |
-| DP-13 | Concurrency | **✅ DECIDED: in scope** — single-threaded cores first (concurrency-aware), then a thread-safe variant (Phase 4) | broadens applicability; the biggest roadmap addition. Concurrent funnel/elastic is a research stretch, not committed |
-| DP-13a | Concurrency model | **✅ DECIDED: single-writer / multi-reader, lock-free reads** | best value-to-complexity; fits the low-latency niche; far more tractable than full lock-free, portable via `kotlinx-atomicfu` |
+| #        | Decision                                                                                                                                                | Recommendation                                                                                                                                                                                                  | Why it matters                                                                                                                                                                                             |
+|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **DP-1** | **Strategy / phase ordering.** A) speed-first (SwissTable map Phase 1, elastic later); B) elastic-first (paper structures Phase 1); C) both in Phase 1. | **✅ DECIDED: A**                                                                                                                                                                                               | Determines whether the project's hard requirement is provable early, and how we position elastic.                                                                                                          |
+| DP-2     | Target set.                                                                                                                                             | **✅ DECIDED: JVM + Native only (for now);** add JS/Wasm later on demand                                                                                                                                        | focuses the performance-credible targets; smaller surface, faster Phase 0                                                                                                                                  |
+| DP-3     | Build infra: adopt full Spine `config` conventions (buildSrc/module.gradle.kts, detekt, Kover) vs keep the lightweight `gradle init` setup              | **✅ DECIDED: incremental** — detekt/Kover/copyright/version/Codecov as KMP-compatible plugins; no JVM-shaped `buildSrc/module.gradle.kts` forced onto KMP source sets                                          | consistency with the org on static analysis/coverage/versioning, without KMP build yak-shaving                                                                                                             |
+| DP-4     | Benchmark framework                                                                                                                                     | **✅ DECIDED: two-tier** — `kotlinx-benchmark` (JVM + Native) + raw JMH (JVM profiling)                                                                                                                         | only credible KMP option; JMH for authoritative JVM/GC numbers                                                                                                                                             |
+| DP-5     | Common test stack                                                                                                                                       | **✅ DECIDED: common-first** — `kotlin.test` + `kotest-assertions-core`/`kotest-property` in `commonTest` (JVM + Native); `Spec`/`internal` naming everywhere; `@DisplayName`/`@Nested` only in JVM-only suites | reconciles KMP commonTest with Spine's Kotest/JUnit5 policy; maximizes shared coverage                                                                                                                     |
+| DP-6     | First specialization + build-vs-reuse                                                                                                                   | **✅ DECIDED: build our own, lead with `Long→V`**; `androidx.collection` is reference + bar, **not a dependency**                                                                                               | depending on androidx couples us to an Android-branded artifact whose non-Android KMP targets are *experimental* — against the "avoid immature dependencies" goal; we still validate that we match/beat it |
+| DP-7     | Specialization matrix mechanism                                                                                                                         | **✅ DECIDED: KSP code-gen from the start** — one template generates the matrix; hand-write `Long→V` as the prototype, then regenerate it from the generator                                                    | consistency + no source duplication at scale (fastutil/HPPC/Eclipse all code-gen)                                                                                                                          |
+| DP-8     | Deletion policy (Phase 1 map)                                                                                                                           | **✅ DECIDED: tombstones + rehash-on-growth** (DELETED control byte; reclaim on resize; rehash-in-place when mostly tombstones)                                                                                 | proven SwissTable/hashbrown approach; composes with control-byte SWAR scan. Funnel/elastic deletion is a separate Phase 2/3 decision                                                                       |
+| DP-9     | Growth policy                                                                                                                                           | **✅ DECIDED: growable, pre-sizable to (n, δ)** — Phase 1 map resize+rehash; funnel/elastic one growable type, pre-size for the predictable regime, auto-rebuild if exceeded                                    | one type serves both predictable and ergonomic use; document the O(n) rebuild / transient 2× memory                                                                                                        |
+| DP-10    | API depth                                                                                                                                               | **✅ DECIDED: lean primitive API now; boxed `MutableMap<Long,V>` view in Phase 4**                                                                                                                              | hot path allocation-free; Map interop opt-in later                                                                                                                                                         |
+| DP-11    | Expose probe metrics                                                                                                                                    | **✅ DECIDED: internal now (CI bound-verification); public read-only inspection API later**                                                                                                                     | keeps the bound-verification capability without committing public surface prematurely                                                                                                                      |
+| DP-12    | Elastic threshold constants                                                                                                                             | **✅ DECIDED: port paper constants, then tune empirically** against oracles + probe metrics                                                                                                                     | faithful baseline + practically validated; the public ports flag these as approximate                                                                                                                      |
+| DP-13    | Concurrency                                                                                                                                             | **✅ DECIDED: in scope** — single-threaded cores first (concurrency-aware), then a thread-safe variant (Phase 4)                                                                                                | broadens applicability; the biggest roadmap addition. Concurrent funnel/elastic is a research stretch, not committed                                                                                       |
+| DP-13a   | Concurrency model                                                                                                                                       | **✅ DECIDED: single-writer / multi-reader, lock-free reads**                                                                                                                                                   | best value-to-complexity; fits the low-latency niche; far more tractable than full lock-free, portable via `kotlinx-atomicfu`                                                                              |
 
 ---
 

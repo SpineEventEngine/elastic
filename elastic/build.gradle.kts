@@ -28,6 +28,7 @@
 
 import io.spine.dependency.kotlinx.AtomicFu
 import io.spine.dependency.kotlinx.Coroutines
+import io.spine.dependency.test.Jol
 import io.spine.dependency.test.Kotest
 import io.spine.gradle.report.license.LicenseReporter
 
@@ -67,6 +68,10 @@ kotlin {
                 // auto-detection (which resolves locally but not in CI's clean
                 // environment); kmp-module already wires the JUnit 5 engine.
                 implementation(kotlin("test-junit5"))
+                // JOL (Java Object Layout) — used only by the retained-footprint
+                // measurement (`MemoryFootprintSpec`) to size each map's object
+                // graph exactly, on the JVM. Test-scoped; not a published dependency.
+                implementation(Jol.lib)
             }
         }
     }

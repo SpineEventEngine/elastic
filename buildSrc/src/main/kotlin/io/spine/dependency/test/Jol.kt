@@ -24,4 +24,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-003")
+package io.spine.dependency.test
+
+/**
+ * The dependency on JOL (Java Object Layout), used to measure the retained heap
+ * footprint of data structures in JVM tests. Test-scoped only; not published.
+ *
+ * @see <a href="https://github.com/openjdk/jol">JOL</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object Jol {
+
+    // https://github.com/openjdk/jol/tags
+    private const val version = "0.17"
+    const val lib = "org.openjdk.jol:jol-core:$version"
+}

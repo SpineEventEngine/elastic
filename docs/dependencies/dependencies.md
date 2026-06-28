@@ -1,6 +1,6 @@
 
 
-# Dependencies of `io.spine:benchmarks:1.0.0-SNAPSHOT-002`
+# Dependencies of `io.spine:benchmarks:1.0.0-SNAPSHOT-003`
 
 ## Runtime
 ## Compile, tests, and tooling
@@ -298,14 +298,14 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Jun 26 14:25:21 WEST 2026** using 
+This report was generated on **Fri Jun 26 20:13:52 WEST 2026** using 
 [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under 
 [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine:elastic:1.0.0-SNAPSHOT-002`
+# Dependencies of `io.spine:elastic:1.0.0-SNAPSHOT-003`
 
 ## Runtime
 ## Compile, tests, and tooling
@@ -1150,6 +1150,10 @@ This report was generated on **Fri Jun 26 14:25:21 WEST 2026** using
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
+1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-test-junit5. **Version** : 2.3.21.
+     * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
+     * **License:** [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
+
 1.  **Group** : org.jetbrains.kotlin. **Name** : kotlin-tooling-core. **Version** : 2.3.21.
      * **Project URL:** [https://kotlinlang.org/](https://kotlinlang.org/)
      * **License:** [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -1446,6 +1450,10 @@ This report was generated on **Fri Jun 26 14:25:21 WEST 2026** using
      * **Project URL:** [https://junit.org/](https://junit.org/)
      * **License:** [Eclipse Public License v2.0](https://www.eclipse.org/legal/epl-v20.html)
 
+1.  **Group** : org.openjdk.jol. **Name** : jol-core. **Version** : 0.17.
+     * **Project URL:** [http://maven.apache.org](http://maven.apache.org)
+     * **License:** [GNU General Public License (GPL), version 2, with the Classpath exception](http://openjdk.java.net/legal/gplv2+ce.html)
+
 1.  **Group** : org.opentest4j. **Name** : opentest4j. **Version** : 1.3.0.
      * **Project URL:** [https://github.com/ota4j-team/opentest4j](https://github.com/ota4j-team/opentest4j)
      * **License:** [The Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -1481,6 +1489,6 @@ This report was generated on **Fri Jun 26 14:25:21 WEST 2026** using
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Fri Jun 26 14:25:16 WEST 2026** using 
+This report was generated on **Fri Jun 26 20:13:50 WEST 2026** using 
 [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under 
 [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
