@@ -68,4 +68,4 @@ detail.
 [codecov]: https://codecov.io/gh/SpineEventEngine/elastic
 [codecov-badge]: https://codecov.io/gh/SpineEventEngine/elastic/branch/master/graph/badge.svg
 [license-badge]: https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat
-[license]: http://www.apache.org/licenses/LICENSE-2.0
+[license]: https://www.apache.org/licenses/LICENSE-2.0
