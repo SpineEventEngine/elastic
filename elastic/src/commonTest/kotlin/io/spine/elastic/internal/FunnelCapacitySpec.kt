@@ -64,12 +64,25 @@ internal class FunnelCapacitySpec {
         val delta = 0.01
         for (expected in listOf(50, 58, 200, 1_000)) {
             val capacity = FunnelCapacity.forEntries(expected, delta)
-            val sizing = FunnelSizing(capacity, delta)
-            val addressable = sizing.totalBuckets * sizing.beta + sizing.specialSize
+            val addressable = addressableSlots(capacity, delta)
             withClue("expected=$expected capacity=$capacity addressable=$addressable") {
                 (addressable >= expected) shouldBe true
+                // Non-vacuous: the addressable cap is actually binding — the prior step in
+                // the doubling sequence cannot hold the entries (by either limit), so the
+                // chosen capacity is the smallest sufficient one, not over-sized slack.
+                if (capacity > FunnelCapacity.MIN) {
+                    val previous = FunnelSizing(capacity / 2, delta)
+                    val previousHoldable =
+                        minOf(previous.maxInserts, addressableSlots(capacity / 2, delta))
+                    (previousHoldable < expected) shouldBe true
+                }
             }
         }
+    }
+
+    private fun addressableSlots(capacity: Int, delta: Double): Int {
+        val sizing = FunnelSizing(capacity, delta)
+        return sizing.totalBuckets * sizing.beta + sizing.specialSize
     }
 
     @Test

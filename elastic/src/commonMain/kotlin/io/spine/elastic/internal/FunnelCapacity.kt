@@ -91,8 +91,10 @@ internal object FunnelCapacity {
      * `FunnelSizing(64, 0.01).maxInserts` is 63 but only 57 slots are addressable. Capping
      * by the addressable count keeps [forEntries] from reporting a capacity that cannot
      * physically hold the requested entries (which would force a structural rebuild despite
-     * the map being "pre-sized"). Both terms grow with [capacity], so the result is
-     * monotonic.
+     * the map being "pre-sized"). The result is non-decreasing across the doubling
+     * sequence [forEntries] scans (`maxInserts` grows, and the addressable count grows
+     * on net even though `totalBuckets*beta` can dip momentarily when `specialSize`
+     * jumps), so the scan still stops at the smallest sufficient capacity.
      */
     private fun holdableEntries(capacity: Int, delta: Double): Int {
         val sizing = FunnelSizing(capacity, delta)

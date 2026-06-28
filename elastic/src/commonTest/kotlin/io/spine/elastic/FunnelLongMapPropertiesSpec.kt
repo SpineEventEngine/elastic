@@ -92,6 +92,29 @@ internal class FunnelLongMapPropertiesSpec {
         }
     }
 
+    @Test
+    fun `agrees with the model when keys collide into the special array`() = runTest {
+        // A constant hash routes every key down one bucket chain, filling the levels and
+        // spilling into the special overflow array — the path whose two-slot fallback was
+        // dropped. A small domain at a large delta keeps the live set below the collision
+        // ceiling (no unbounded growth) while keys genuinely reach the special array, so
+        // the `LinkedHashMap` oracle validates `findInSpecial`/`placeInSpecial` (including
+        // tombstone reuse there) under random churn.
+        val domain = 0L..24L
+        checkAll(100, Arb.list(operations(Arb.long(domain)), 0..150)) { ops ->
+            val map = FunnelLongMap<Int>(delta = 0.5, hasher = { 0L })
+            val model = LinkedHashMap<Long, Int>()
+            for (op in ops) {
+                applyAndCompare(op, map, model)
+            }
+            map.size shouldBe model.size
+            for (key in domain) {
+                map.containsKey(key) shouldBe model.containsKey(key)
+                map[key] shouldBe model[key]
+            }
+        }
+    }
+
     private fun applyAndCompare(op: Op, map: FunnelLongMap<Int>, model: MutableMap<Long, Int>) {
         when (op) {
             is Op.Put -> map.put(op.key, op.value) shouldBe model.put(op.key, op.value)
