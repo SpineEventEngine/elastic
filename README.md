@@ -4,8 +4,7 @@
 
 # elastic
 
-A Kotlin Multiplatform library of high-performance hash-table data structures,
-published under `io.spine` as part of the Spine SDK.
+A Kotlin Multiplatform library of high-performance hash-table data structures.
 
 The library pursues two deliberately separate goals:
 
