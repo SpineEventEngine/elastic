@@ -32,15 +32,14 @@ package io.spine.elastic
  *
  * The `Long` key type is primitive on purpose: the hot path stores keys in a
  * `LongArray`, so neither lookups nor insertions box the key. This is the lead
- * specialization of the library (decision DP-6); a boxed
- * [kotlin.collections.MutableMap] view over it is a later, opt-in addition
- * (decision DP-10), and a generated matrix of further specializations follows
- * via code generation (decision DP-7).
+ * specialization of the library; a boxed [kotlin.collections.MutableMap] view over
+ * it is a later, opt-in addition, and a matrix of further specializations may
+ * follow.
  *
  * Implementations in the initial phase are **single-threaded**. A
- * single-writer / multiple-reader, lock-free-read variant is a separate phase
- * (decision DP-13); the single-threaded cores are nevertheless designed so that
- * variant can be derived rather than retrofitted.
+ * single-writer / multiple-reader, lock-free-read variant is a separate, later
+ * phase; the single-threaded cores are nevertheless designed so that variant can be
+ * derived rather than retrofitted.
  *
  * @param V the type of mapped values
  */

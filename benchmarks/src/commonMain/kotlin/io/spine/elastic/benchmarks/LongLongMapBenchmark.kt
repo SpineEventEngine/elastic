@@ -26,6 +26,8 @@
 
 package io.spine.elastic.benchmarks
 
+import io.spine.elastic.LongHasher
+import io.spine.elastic.LongLongMap
 import kotlinx.benchmark.Benchmark
 import kotlinx.benchmark.BenchmarkMode
 import kotlinx.benchmark.BenchmarkTimeUnit
@@ -40,43 +42,47 @@ import kotlinx.benchmark.State
 import kotlinx.benchmark.Warmup
 
 /**
- * Baseline measurements of the standard-library [HashMap] with boxed `Long`
- * keys and values.
+ * Measurements of the fully primitive [LongLongMap] (`Long` keys *and* `Long`
+ * values, neither boxed), the true primitive-versus-primitive counterpart of
+ * `java.util.HashMap<Long, Long>` in [StdlibHashMapBenchmark].
  *
- * This is the bar the Phase 1 primitive `Long → V` map must beat (and the proof
- * that the cross-platform harness works end-to-end). It runs on JVM (via JMH)
- * and on Kotlin/Native, so the per-platform baselines are captured from the
- * outset. Operations are deliberately separate (per the benchmark methodology):
- * `lookupHit`; `insertAllPresized` — the fair, steady-state insert
- * baseline, with the map pre-sized in its own units (capacity for `size` entries
- * at the JDK load factor) as the fairness gate requires; and `insertAllGrowing` —
- * the same inserts into a default-capacity map, isolating resize/rehash cost.
- * Each result is consumed through a [Blackhole] to defeat dead-code elimination.
+ * Same sizes and key set as the other benchmarks. Lookups sum the returned `long`
+ * into a sink consumed once through the [Blackhole], so the hot path stays free of
+ * the boxing a per-result `consume` would introduce — the whole point of this map.
+ * `lookupHitShuffled` is the fair random-access gate (see [SwissLongMapBenchmark]).
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(BenchmarkTimeUnit.NANOSECONDS)
 @Warmup(iterations = 5, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
-class StdlibHashMapBenchmark {
+class LongLongMapBenchmark {
 
     @Param("10000", "1000000")
     var size: Int = 0
 
     private var keys: LongArray = LongArray(0)
     private var shuffledKeys: LongArray = LongArray(0)
-    private var map: HashMap<Long, Long> = HashMap()
+    private var map: LongLongMap = LongLongMap()
+    private var fibonacciMap: LongLongMap = LongLongMap()
 
     @Setup
     fun setup() {
         val n = size
         keys = LongArray(n) { it.toLong() }
         shuffledKeys = shuffle(keys)
-        val prepared = HashMap<Long, Long>((n / JDK_LOAD_FACTOR).toInt() + 1)
+        val prepared = LongLongMap(expectedSize = n)
         for (key in keys) {
-            prepared[key] = key
+            prepared.put(key, key)
         }
         map = prepared
+        // Same map but with the single-multiply Fibonacci hasher instead of the
+        // default fmix64 (two multiplies) — to quantify the hash's in-cache cost.
+        val fibonacci = LongLongMap(expectedSize = n, hasher = LongHasher.Fibonacci)
+        for (key in keys) {
+            fibonacci.put(key, key)
+        }
+        fibonacciMap = fibonacci
     }
 
     @Benchmark
@@ -84,7 +90,7 @@ class StdlibHashMapBenchmark {
         val m = map
         var sink = 0L
         for (key in keys) {
-            sink += m[key] ?: 0L
+            sink += m[key]
         }
         blackhole.consume(sink)
     }
@@ -94,31 +100,36 @@ class StdlibHashMapBenchmark {
         val m = map
         var sink = 0L
         for (key in shuffledKeys) {
-            sink += m[key] ?: 0L
+            sink += m[key]
+        }
+        blackhole.consume(sink)
+    }
+
+    @Benchmark
+    fun lookupHitShuffledFastHash(blackhole: Blackhole) {
+        val m = fibonacciMap
+        var sink = 0L
+        for (key in shuffledKeys) {
+            sink += m[key]
         }
         blackhole.consume(sink)
     }
 
     @Benchmark
     fun insertAllPresized(blackhole: Blackhole) {
-        val fresh = HashMap<Long, Long>((size / JDK_LOAD_FACTOR).toInt() + 1)
+        val fresh = LongLongMap(expectedSize = size)
         for (key in keys) {
-            fresh[key] = key
+            fresh.put(key, key)
         }
         blackhole.consume(fresh)
     }
 
     @Benchmark
     fun insertAllGrowing(blackhole: Blackhole) {
-        val fresh = HashMap<Long, Long>()
+        val fresh = LongLongMap()
         for (key in keys) {
-            fresh[key] = key
+            fresh.put(key, key)
         }
         blackhole.consume(fresh)
-    }
-
-    private companion object {
-        /** The default `java.util.HashMap` load factor; used to pre-size fairly. */
-        const val JDK_LOAD_FACTOR = 0.75
     }
 }
