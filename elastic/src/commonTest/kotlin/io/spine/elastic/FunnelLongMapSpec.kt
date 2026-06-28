@@ -255,6 +255,34 @@ internal class FunnelLongMapSpec {
     }
 
     @Test
+    fun `places into and finds keys in the special overflow array`() {
+        // A constant hash maps every key to one bucket per level plus a single special
+        // home, so the chain holds exactly `levelCount*beta + specialProbeLimit` keys —
+        // filling it forces the last `specialProbeLimit` keys into the special array.
+        val delta = 0.5
+        val sizing = FunnelSizing(FunnelCapacity.forEntries(0, delta), delta)
+        val chainCapacity = sizing.levelCount * sizing.beta + sizing.specialProbeLimit()
+        val map = FunnelLongMap<Long>(delta = delta, hasher = { 0L })
+        for (key in 0L until chainCapacity.toLong()) {
+            map.put(key, key * 11L)
+        }
+        map.size shouldBe chainCapacity
+        // Every key — including those that spilled into the special array — is found.
+        for (key in 0L until chainCapacity.toLong()) {
+            map[key] shouldBe key * 11L
+        }
+        // Delete a special-resident key (the last inserted), leaving a tombstone in the
+        // special array; a fresh key then reuses that slot rather than overflowing.
+        val specialKey = chainCapacity - 1L
+        map.remove(specialKey) shouldBe specialKey * 11L
+        map.containsKey(specialKey) shouldBe false
+        val reused = chainCapacity.toLong()
+        map.put(reused, reused * 11L).shouldBeNull()
+        map[reused] shouldBe reused * 11L
+        map.size shouldBe chainCapacity
+    }
+
+    @Test
     fun `fails loudly when a degenerate hasher defeats the per-level salts`() {
         // Funnel hashing cannot accommodate keys that collide identically at every
         // level regardless of capacity; it must throw rather than loop or OOM. A

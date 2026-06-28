@@ -101,7 +101,7 @@ private const val MAX_REBUILD_ATTEMPTS: Int = 4
  * value is overwritten. Only once the key is proven absent does placement descend the
  * levels, placing into the first level whose bucket has a free slot and descending
  * past any bucket entirely full of other keys; if every level's bucket is full, the
- * key spills into the special array (a short linear probe plus a two-slot fallback).
+ * key spills into the special array (a short linear probe).
  * Searching *before* placing is essential: deciding placement from a single bucket
  * alone could place a key shallow while a live copy sits deeper, creating cross-level
  * duplicates once tombstones exist.
@@ -180,14 +180,14 @@ public class FunnelLongMap<V> public constructor(
 
     /**
      * The structural upper bound on the slots a single operation may examine on the
-     * current table: `levelCount*beta + specialProbeLimit + 2`. Internal
-     * instrumentation paired with [lastProbes] for the probe-count bound check; not
-     * part of the public surface, and it tracks the current table across rebuilds.
+     * current table: `levelCount*beta + specialProbeLimit`. Internal instrumentation
+     * paired with [lastProbes] for the probe-count bound check; not part of the public
+     * surface, and it tracks the current table across rebuilds.
      */
     internal val maxProbesPerOp: Int
         get() {
             val current = tables
-            return current.levelCount * current.beta + current.specialProbeLimit + 2
+            return current.levelCount * current.beta + current.specialProbeLimit
         }
 
     public override val size: Int
@@ -395,8 +395,9 @@ public class FunnelLongMap<V> public constructor(
         }
 
         /**
-         * Searches the special array for [key]: a linear probe (stopping at the first
-         * empty slot), then the two-slot fallback at the home index and the next.
+         * Searches the special array for [key] with a linear probe of up to
+         * [FunnelSizing.specialProbeLimit] slots from the home index, stopping at the
+         * first empty slot (which proves the key absent).
          */
         @Suppress("LoopWithTooManyJumpStatements") // Same two exits as a bucket scan.
         private fun findInSpecial(key: Long, baseHash: Long): Int {
@@ -412,16 +413,6 @@ public class FunnelLongMap<V> public constructor(
                 if (occupancy == FULL && keys[slot] == key) {
                     result = slot
                     break
-                }
-            }
-            if (result == SLOT_ABSENT) {
-                probes += 2
-                val first = specialBase + home % specialSize
-                val second = specialBase + (home + 1) % specialSize
-                result = when {
-                    ctrl[first] == FULL && keys[first] == key -> first
-                    ctrl[second] == FULL && keys[second] == key -> second
-                    else -> SLOT_ABSENT
                 }
             }
             return result
@@ -469,11 +460,9 @@ public class FunnelLongMap<V> public constructor(
 
         /**
          * Returns the special-array slot for an absent key: the first non-full slot of
-         * the linear probe (a [TOMBSTONE] preferred), then a two-slot fallback, or
-         * [SLOT_ABSENT] when the special array is full. The fallback only widens
-         * coverage when [FunnelSizing.specialProbeLimit] is `1`; for larger limits its
-         * slots are already covered by the probe, but it is kept for fidelity to the
-         * reference's overflow handling.
+         * the linear probe (a [TOMBSTONE] preferred over a never-used [EMPTY], so
+         * deletions are reclaimed eagerly), or [SLOT_ABSENT] when the probe window is
+         * entirely full.
          */
         @Suppress("LoopWithTooManyJumpStatements") // Stops at the first empty slot.
         private fun placeInSpecial(baseHash: Long): Int {
@@ -491,17 +480,7 @@ public class FunnelLongMap<V> public constructor(
                     firstTomb = slot
                 }
             }
-            var result = if (firstTomb != SLOT_ABSENT) firstTomb else firstEmpty
-            if (result == SLOT_ABSENT) {
-                val first = specialBase + home % specialSize
-                val second = specialBase + (home + 1) % specialSize
-                result = when {
-                    ctrl[first] != FULL -> first
-                    ctrl[second] != FULL -> second
-                    else -> SLOT_ABSENT
-                }
-            }
-            return result
+            return if (firstTomb != SLOT_ABSENT) firstTomb else firstEmpty
         }
 
         /**

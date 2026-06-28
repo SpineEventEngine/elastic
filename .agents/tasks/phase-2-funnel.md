@@ -114,11 +114,14 @@ and the approved design (this file supersedes the scratch plan).
   lookup-at-scale cost) — to be captured on pinned hardware, like Phase 1.
 - **Probe-bound mean check** is currently a loose "< ceiling" soft assertion; tighten to a
   calibrated amortized `O(log 1/δ)` bound once JVM numbers exist.
-- **Consciously accepted (review should-considers, left as-is):** (1) the special array's
-  two-slot fallback is inert at every realizable size (`specialProbeLimit ≥ 2` because
-  `FunnelCapacity.MIN = 64`) — kept as a documented, oracle-faithful safety net; it adds a
-  constant `+2` to the probe ceiling, which `maxProbesPerOp` accounts for. (2) The two
-  "cannot grow further" failure modes throw different types: `IllegalStateException` on
+- **Special-array two-slot fallback — REMOVED (post-review, Codecov-driven).** It was
+  inert at every realizable size (`specialProbeLimit ≥ 2` because `FunnelCapacity.MIN = 64`,
+  so its slots were already covered by the linear probe), so it was dead code that only
+  dragged coverage. Dropped from `findInSpecial`/`placeInSpecial`; the probe ceiling is now
+  `levelCount*beta + specialProbeLimit` (no `+2`). The differential tests confirm no
+  behavioural change.
+- **Consciously accepted (left as-is):** the two "cannot grow further" failure modes throw
+  different types: `IllegalStateException` on
   re-double exhaustion (the realistic degenerate-hash case, asserted with its message) and
   `IllegalArgumentException` at the `FunnelCapacity.MAX` ceiling (matches Phase-1
   `Capacity.grown`, essentially unreachable in practice).

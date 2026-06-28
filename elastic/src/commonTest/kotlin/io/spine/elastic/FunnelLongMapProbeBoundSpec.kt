@@ -36,9 +36,9 @@ import kotlin.test.Test
  * Turns the paper's worst-case bound into a CI regression metric (decision DP-11).
  *
  * Funnel hashing inspects at most one `beta`-slot bucket per level over `levelCount`
- * levels, plus the special array's probe limit and two-slot fallback. A single
- * operation therefore never examines more than `levelCount*beta + specialProbeLimit
- * + 2` slots — `O(alpha*beta + log log n) = O(log² 1/delta)`. The map exposes that
+ * levels, plus the special array's linear probe of `specialProbeLimit` slots. A single
+ * operation therefore never examines more than `levelCount*beta + specialProbeLimit`
+ * slots — `O(alpha*beta + log log n) = O(log² 1/delta)`. The map exposes that
  * ceiling as [FunnelLongMap.maxProbesPerOp] and the slots examined by the last search
  * as [FunnelLongMap.lastProbes]; this verifies the ceiling is never exceeded for a
  * large sample of present and absent keys at high load, and that the typical search is
