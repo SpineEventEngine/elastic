@@ -55,13 +55,15 @@ private const val DEFAULT_DELTA: Double = 0.1
 private const val GOLDEN: Long = -0x61C8864680B583EBL
 
 /**
- * The most times a single rebuild may double its target capacity before giving up.
+ * The most successively-doubled capacities a single rebuild tries before giving up —
+ * the first target plus that many minus one re-doublings.
+ *
  * A rebuild re-inserts every live entry by the same greedy descent, which can itself
- * overflow; one extra doubling resolves this for well-distributed keys, so this
- * bound is generous headroom — exceeding it signals a hasher that defeats the
+ * overflow; a single re-doubling resolves this for well-distributed keys, so four
+ * attempts is generous headroom. Exhausting them signals a hasher that defeats the
  * per-level salts (e.g. a constant hash), which funnel hashing cannot accommodate.
  */
-private const val MAX_GROWTH_RETRIES: Int = 4
+private const val MAX_REBUILD_ATTEMPTS: Int = 4
 
 /**
  * A clean-room implementation of **funnel hashing** from Farach-Colton, Krapivin
@@ -267,9 +269,9 @@ public class FunnelLongMap<V> public constructor(
      * A [structural] overflow always grows the capacity (at the same capacity the
      * salts and per-level moduli are unchanged, so a same-size rebuild would reproduce
      * the very collision that overflowed); otherwise a low-occupancy table rebuilds in
-     * place to reclaim tombstones, and a fuller one doubles. Because the
-     * greedy re-insertion can itself overflow, the target capacity is doubled and the
-     * drain retried up to [MAX_GROWTH_RETRIES] times before failing loudly.
+     * place to reclaim tombstones, and a fuller one doubles. Because the greedy
+     * re-insertion can itself overflow, the drain is retried at successively doubled
+     * capacities, up to [MAX_REBUILD_ATTEMPTS] in all, before failing loudly.
      */
     @Suppress("LoopWithTooManyJumpStatements") // The drain exits early on the first
     // entry that does not fit, so the caller can grow the target and retry.
@@ -298,9 +300,9 @@ public class FunnelLongMap<V> public constructor(
                 return
             }
             attempt++
-            check(attempt < MAX_GROWTH_RETRIES) {
-                "Funnel rebuild could not place all entries after $attempt growths; " +
-                    "the hash function may be defeating the per-level salts."
+            check(attempt < MAX_REBUILD_ATTEMPTS) {
+                "Funnel rebuild could not place all entries after trying $attempt " +
+                    "capacities; the hash function may be defeating the per-level salts."
             }
             capacity = FunnelCapacity.grown(capacity)
         }
