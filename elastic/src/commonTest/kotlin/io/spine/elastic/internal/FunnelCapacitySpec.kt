@@ -55,6 +55,24 @@ internal class FunnelCapacitySpec {
     }
 
     @Test
+    fun `sizes by addressable slots rather than the load budget for small deltas`() {
+        // With a small delta the trailing primary slots are unaddressable, so
+        // maxInserts overstates capacity (e.g. FunnelSizing(64, 0.01).maxInserts is 63
+        // but only 57 slots are addressable). forEntries must return a capacity whose
+        // addressable slots actually hold the entries — otherwise a "pre-sized" map
+        // structurally rebuilds before reaching them.
+        val delta = 0.01
+        for (expected in listOf(50, 58, 200, 1_000)) {
+            val capacity = FunnelCapacity.forEntries(expected, delta)
+            val sizing = FunnelSizing(capacity, delta)
+            val addressable = sizing.totalBuckets * sizing.beta + sizing.specialSize
+            withClue("expected=$expected capacity=$capacity addressable=$addressable") {
+                (addressable >= expected) shouldBe true
+            }
+        }
+    }
+
+    @Test
     fun `doubles the capacity on grow`() {
         FunnelCapacity.grown(FunnelCapacity.MIN) shouldBe FunnelCapacity.MIN * 2
     }

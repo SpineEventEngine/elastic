@@ -56,12 +56,14 @@ internal object FunnelCapacity {
     }
 
     /**
-     * The smallest capacity in the doubling sequence from [MIN] whose
-     * [FunnelSizing.maxInserts] at [delta] holds [expectedSize] entries, so a map
-     * pre-sized for that many entries needs no rebuild.
+     * The smallest capacity in the doubling sequence from [MIN] that can actually hold
+     * [expectedSize] entries at [delta], so a map pre-sized for that many entries needs
+     * no rebuild.
      *
-     * `maxInserts` is monotonic in capacity, so the linear scan terminates at the
-     * first sufficient capacity.
+     * Sizing is against [holdableEntries] — the lesser of the load budget and the
+     * addressable slot count — not [FunnelSizing.maxInserts] alone, which for small
+     * `delta` overstates capacity. The value is monotonic in capacity, so the linear
+     * scan terminates at the first sufficient capacity.
      */
     fun forEntries(expectedSize: Int, delta: Double): Int {
         require(expectedSize >= 0) {
@@ -69,7 +71,7 @@ internal object FunnelCapacity {
         }
         requireValidDelta(delta)
         var capacity = MIN
-        while (FunnelSizing(capacity, delta).maxInserts < expectedSize) {
+        while (holdableEntries(capacity, delta) < expectedSize) {
             require(capacity < MAX) {
                 "Cannot size a funnel map for $expectedSize entries: " +
                     "exceeds the maximum of $MAX slots."
@@ -77,5 +79,24 @@ internal object FunnelCapacity {
             capacity *= 2
         }
         return capacity
+    }
+
+    /**
+     * The most entries a table of [capacity] at [delta] can actually hold: the lesser of
+     * its load budget ([FunnelSizing.maxInserts]) and its **addressable** slot count
+     * (`totalBuckets * beta + specialSize`).
+     *
+     * For small `delta` the trailing `primarySize % beta` primary slots are unaddressable
+     * (see [FunnelSizing]), so `maxInserts` alone overstates how many entries fit — e.g.
+     * `FunnelSizing(64, 0.01).maxInserts` is 63 but only 57 slots are addressable. Capping
+     * by the addressable count keeps [forEntries] from reporting a capacity that cannot
+     * physically hold the requested entries (which would force a structural rebuild despite
+     * the map being "pre-sized"). Both terms grow with [capacity], so the result is
+     * monotonic.
+     */
+    private fun holdableEntries(capacity: Int, delta: Double): Int {
+        val sizing = FunnelSizing(capacity, delta)
+        val addressable = sizing.totalBuckets * sizing.beta + sizing.specialSize
+        return minOf(sizing.maxInserts, addressable)
     }
 }
