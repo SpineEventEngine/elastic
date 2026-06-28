@@ -28,6 +28,7 @@
 
 import io.spine.dependency.kotlinx.AtomicFu
 import io.spine.dependency.kotlinx.Coroutines
+import io.spine.dependency.local.Base
 import io.spine.dependency.test.Jol
 import io.spine.dependency.test.Kotest
 import io.spine.gradle.report.license.LicenseReporter
@@ -77,13 +78,20 @@ kotlin {
     }
 }
 
-// coroutines-test and kotest pull conflicting transitive `atomicfu` versions
-// (0.23.1 / 0.26.1) into the Native test klib compile, and KMP klib resolution
-// fails on version conflicts rather than picking the highest. Force config's
-// resolvable version across all configurations.
+// Pin transitive versions that dependency resolution would otherwise get wrong:
+//
+//  * coroutines-test and kotest pull conflicting transitive `atomicfu` versions
+//    (0.23.1 / 0.26.1) into the Native test klib compile, and KMP klib
+//    resolution fails on version conflicts rather than picking the highest.
+//  * `base-testlib` (added to `jvmTest` by `kmp-module`) drags in a stale
+//    `spine-annotations` via its POM; pin it to the current Base-family version
+//    so it matches `spine-base` and resolves like the rest of the Spine stack.
+//
+// Force config's resolvable versions across all configurations.
 configurations.all {
     resolutionStrategy {
         force(AtomicFu.lib)
+        force(Base.annotations)
     }
 }
 
