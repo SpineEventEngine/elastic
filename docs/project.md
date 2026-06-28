@@ -67,10 +67,15 @@ break even with `HashMap`. Every published number names its baseline and
 compares primitive-vs-primitive at an equalized load factor.
 
 **Status:** Phase 0 (foundation, harness, and the `(n, δ)` sizing formulas
-cross-checked against the `sternma/optopenhash` oracle) is complete. Work is
-proceeding on Phase 1 — the first fast structure (`Long → V` SwissTable-style
-map) that demonstrates the speed win. Phases 2–3 add the clean-room
-`FunnelHashTable` and `ElasticHashTable`; Phase 4 adds the concurrent variant.
+cross-checked against the `sternma/optopenhash` oracle) and Phase 1 are both
+complete. Phase 1 shipped the two primitive-keyed SwissTable-style maps that
+demonstrate the speed win — `SwissLongMap<V>` (`Long → V`, no key boxing) and
+`LongLongMap` (the fully primitive `Long → Long` specialization) — with the win
+proven on memory (`LongLongMap` retains ~4.7× less heap than `HashMap<Long,Long>`)
+and at-scale time (~2× faster random-access lookup at 1M entries). Phases 2–3 add
+the clean-room `FunnelHashTable` and `ElasticHashTable`; Phase 4 adds the
+concurrent variant. See the
+[Phase 1 summary](../.agents/tasks/phase-1-swiss-long-map.md).
 
 Read [`.agents/guidelines/jvm-project.md`](../.agents/guidelines/jvm-project.md)
 for the shared build stack, coding style, tests, and versioning policy that
