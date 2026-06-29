@@ -108,11 +108,11 @@ internal object ElasticSizing {
      * probing `(h + j(j+1)/2) mod size` visits the level's slots exactly once —
      * full coverage, which the reference's quadratic probing on prime-ish sizes
      * lacks (it reaches only ≈half the slots and so cannot fill to high load). The
-     * two trailing size-1 levels make the geometric series (which sums to
-     * `capacity - 2`) reach exactly [capacity], so this returns **one more** level
-     * than [levelCount]: `binaryLevelSizes(capacity).size == levelCount(capacity) + 1`.
-     * The map must size every per-level array from this length, never from
-     * [levelCount].
+     * descending powers `[capacity/2 … 1]` sum to `capacity - 1`; one extra size-1
+     * level appended brings the total to exactly [capacity], so this returns **one
+     * more** level than [levelCount]:
+     * `binaryLevelSizes(capacity).size == levelCount(capacity) + 1`. The map must size
+     * every per-level array from this length, never from [levelCount].
      *
      * @param capacity a power of two, at least 2
      */

@@ -76,7 +76,8 @@ private const val GOLDEN: Long = -0x61C8864680B583EBL
  *
  * The slot array is partitioned into geometric **levels** `A₀, A₁, …` of decreasing
  * size — `A₀` the largest (`capacity/2`), each subsequent level half the previous, down
- * to a size-1 tail ([ElasticSizing.binaryLevelSizes]). Levels are **largest-first**,
+ * to a size-1 tail of two unit levels ([ElasticSizing.binaryLevelSizes]). Levels are
+ * **largest-first**,
  * matching the paper's `A₁`-largest cascade; this deliberately *reverses* the
  * `sternma/optopenhash` reference's smallest-first iteration (the reference walks the
  * geometric series the wrong way), so do not "align" it back. Each level is a power of
