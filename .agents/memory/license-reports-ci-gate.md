@@ -24,4 +24,4 @@ check even though nothing is actually wrong with it.
 commit. A **version bump is not required**: regenerating against stale `master` already
 yields a diff (timestamp + reporter drift). A version-bumping PR refreshes the same files
 as a side effect, which is why such PRs clear this check for free. See
-[[build-auto-commits-dependency-reports]].
+[[build-regenerates-dependency-reports]].
