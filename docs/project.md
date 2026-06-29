@@ -3,8 +3,7 @@
 ## Overview
 
 `elastic` is a Kotlin Multiplatform library of high-performance hash-table data
-structures, published under `io.spine` as part of the Spine SDK organisation.
-It pursues two deliberately separate goals. The first is the
+structures. It pursues two deliberately separate goals. The first is the
 *provable speed win*: primitive-specialized, SwissTable-style open-addressing
 maps (leading with `Long → V`) that are much faster and more compact than the
 platform standard-library maps by eliminating key boxing — the project's stated
@@ -25,7 +24,7 @@ namesake structures honestly. See
 
 **Role in the org:** a standalone Kotlin Multiplatform **library** (not a tool
 or Gradle plugin). It depends on the shared Spine `config` submodule for build
-conventions but has no runtime dependency on other Spine SDK modules.
+conventions but has no runtime dependency on Spine SDK modules.
 
 **Targets:** JVM plus Kotlin/Native — `macosArm64`, `linuxX64`,
 `linuxArm64`, `mingwX64`, `iosArm64`, `iosSimulatorArm64`. JS and Wasm are
