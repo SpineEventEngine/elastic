@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine</groupId>
 <artifactId>elastic</artifactId>
-<version>1.0.0-SNAPSHOT-004</version>
+<version>1.0.0-SNAPSHOT-005</version>
 
 <inceptionYear>2015</inceptionYear>
 
