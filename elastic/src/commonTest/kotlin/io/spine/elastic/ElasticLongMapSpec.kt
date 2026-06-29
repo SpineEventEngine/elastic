@@ -184,6 +184,30 @@ internal class ElasticLongMapSpec {
     }
 
     @Test
+    fun `honors a high delta by growing instead of overflowing the load budget`() {
+        // A high delta makes the initial table's maxInserts zero (capacity 16 at delta
+        // 0.99 reserves all 16 slots), so the first insert must grow to a capacity whose
+        // 1 - delta budget actually holds the entries. The rebuild must keep doubling
+        // until that budget is met — a single doubling (or the same capacity) would leave
+        // growthLeft negative and silently exceed the promised load.
+        val delta = 0.99
+        val map = ElasticLongMap<Long>(delta = delta)
+        val count = 40L
+        for (key in 0L until count) {
+            map.put(key, key * 2L)
+        }
+        map.size shouldBe count.toInt()
+        for (key in 0L until count) {
+            map[key] shouldBe key * 2L
+        }
+        // The load cap is honored throughout: the table's budget covers every live
+        // entry, which holds only if growthLeft never went negative.
+        withClue("maxInserts(${map.tableCapacity}, $delta) must hold ${map.size} entries") {
+            (ElasticSizing.maxInserts(map.tableCapacity, delta) >= map.size) shouldBe true
+        }
+    }
+
+    @Test
     fun `degrades gracefully on a constant hasher instead of throwing`() {
         // Unlike FunnelLongMap (which throws), ElasticLongMap's full-coverage levels
         // absorb a degenerate hasher by filling completely and growing — every key stays

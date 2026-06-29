@@ -282,19 +282,26 @@ public class ElasticLongMap<V> public constructor(
      * Rebuilds into a fresh table holding all live entries plus the pending (absent)
      * [pendingKey], dropping tombstones, then publishes it with a single field write.
      *
-     * Low occupancy (`entryCount ≤ maxInserts/2`, and never a [structural] overflow)
-     * rebuilds in place at the same capacity to reclaim tombstones; otherwise the
-     * capacity doubles. The drain re-inserts by a pure greedy descent, which over
-     * full-coverage levels always fits a table sized for its entries — so, unlike a
-     * funnel rebuild, an elastic rebuild can never itself overflow and a single pass
-     * suffices ([Tables.reinsert] fails loudly rather than dropping an entry if that
-     * invariant is ever violated).
+     * The fresh table must have room for every live entry **plus** the pending one
+     * within its `1 - delta` budget, so the target capacity is grown until
+     * [ElasticSizing.maxInserts] is at least that count. A high `delta` reserves close
+     * to a whole slot per entry, so this can take several doublings — a single doubling
+     * (or worse, the same capacity) could leave `maxInserts` below the live count, which
+     * would drive `growthLeft` negative and silently break the load cap. Low occupancy
+     * (`entryCount ≤ maxInserts/2`) with a capacity that already fits rebuilds in place
+     * to reclaim tombstones rather than growing. The drain re-inserts by a pure greedy
+     * descent, which over full-coverage levels always fits a table sized for its
+     * entries — so, unlike a funnel rebuild, an elastic rebuild can never itself
+     * overflow and a single pass suffices ([Tables.reinsert] fails loudly rather than
+     * dropping an entry if that invariant is ever violated).
      */
     private fun rebuildOrGrow(pendingKey: Long, pendingValue: V, structural: Boolean) {
         val current = tables
-        val reclaimInPlace = !structural && entryCount <= current.maxInserts / 2
+        val needed = entryCount + 1
+        val reclaimInPlace =
+            !structural && entryCount <= current.maxInserts / 2 && current.maxInserts >= needed
         val capacity =
-            if (reclaimInPlace) current.capacity else ElasticCapacity.grown(current.capacity)
+            if (reclaimInPlace) current.capacity else grownToHold(current.capacity, needed)
         val rebuilt = Tables<V>(capacity, delta, hasher)
         val sourceCtrl = current.ctrl
         for (slot in sourceCtrl.indices) {
@@ -306,6 +313,20 @@ public class ElasticLongMap<V> public constructor(
         tables = rebuilt
         entryCount++
         growthLeft = rebuilt.maxInserts - entryCount
+    }
+
+    /**
+     * The next capacity strictly larger than [from] whose [ElasticSizing.maxInserts] at
+     * [delta] is at least [needed]. Always grows by at least one doubling; a high `delta`
+     * (little free budget per slot) may require several before the budget admits [needed]
+     * entries.
+     */
+    private fun grownToHold(from: Int, needed: Int): Int {
+        var capacity = ElasticCapacity.grown(from)
+        while (ElasticSizing.maxInserts(capacity, delta) < needed) {
+            capacity = ElasticCapacity.grown(capacity)
+        }
+        return capacity
     }
 
     /**
