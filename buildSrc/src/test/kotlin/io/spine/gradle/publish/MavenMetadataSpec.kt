@@ -24,23 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.dependency.local
+package io.spine.gradle.publish
 
-/**
- * Spine Base module.
- *
- * @see <a href="https://github.com/SpineEventEngine/base-libraries">spine-base-libraries</a>
- */
-@Suppress("ConstPropertyName", "unused")
-object Base {
-    const val version = "2.0.0-SNAPSHOT.421"
-    const val versionForBuildScript = "2.0.0-SNAPSHOT.421"
-    const val group = Spine.group
-    private const val prefix = "spine"
-    const val libModule = "$prefix-base"
-    const val lib = "$group:$libModule:$version"
-    const val libForBuildScript = "$group:$libModule:$versionForBuildScript"
-    const val annotations = "$group:$prefix-annotations:$version"
-    const val environment = "$group:$prefix-environment:$version"
-    const val format = "$group:$prefix-format:$version"
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import io.kotest.matchers.collections.shouldContainExactly
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+
+@DisplayName("`MavenMetadata` should")
+internal class MavenMetadataSpec {
+
+    /**
+     * Round-trips through the same [XmlMapper] used in production, asserting the version list
+     * survives. This guards the `var` properties of [MavenMetadata] and [Versioning]: a `val`
+     * (or `internal`-mangled setter) would leave the list empty after deserialization, silently
+     * disabling the "already published" check.
+     */
+    @Test
+    fun `survive a Jackson round-trip, keeping its versions`() {
+        val versions = listOf("2.0.0-SNAPSHOT.79", "2.0.0-SNAPSHOT.80", "2.0.0-SNAPSHOT.81")
+        val mapper = XmlMapper()
+
+        val xml = mapper.writeValueAsString(MavenMetadata(Versioning(versions)))
+        val parsed = mapper.readValue(xml, MavenMetadata::class.java)
+
+        parsed.versioning.versions shouldContainExactly versions
+    }
 }

@@ -45,8 +45,9 @@ detail.
   Measured against `HashMap<Long, Long>`, `LongLongMap` retains **~4.7× less
   heap** and is **~2× faster on random-access lookup at 1M entries**
   (`SwissLongMap`: ~2.3× less heap).
-- **Phase 2 — planned.** `FunnelHashTable` — the greedy, simpler clean-room
-  paper structure.
+- **Phase 2 — complete.** `FunnelLongMap<V>` — a clean-room funnel-hashing map
+  (the first faithful JVM/KMP port), positioned as a bounded-worst-case
+  specialist for very high load factors.
 - **Phase 3 — planned.** `ElasticHashTable` — the non-greedy namesake.
 - **Phase 4 — planned.** A single-writer / multi-reader variant with lock-free
   reads.
