@@ -28,6 +28,7 @@
 
 import io.spine.dependency.kotlinx.AtomicFu
 import io.spine.dependency.kotlinx.Coroutines
+import io.spine.dependency.local.Base
 import io.spine.dependency.test.Jol
 import io.spine.dependency.test.Kotest
 import io.spine.gradle.report.license.LicenseReporter
@@ -84,6 +85,11 @@ kotlin {
 configurations.all {
     resolutionStrategy {
         force(AtomicFu.lib)
+        // `base-testlib` (pulled into `jvmTest` by `kmp-module`) transitively depends on an
+        // older `spine-annotations` than the `Base` module this project targets. Align it to
+        // `Base`'s version so resolution uses the already-cached artifact instead of trying to
+        // fetch the stale transitive version from GitHub Packages.
+        force(Base.annotations)
     }
 }
 

@@ -66,11 +66,14 @@ boxing elimination and is *gated on primitive keys*; object-key maps may only
 break even with `HashMap`. Every published number names its baseline and
 compares primitive-vs-primitive at an equalized load factor.
 
-**Status:** Phase 0 (foundation, harness, and the `(n, δ)` sizing formulas
-cross-checked against the `sternma/optopenhash` oracle) is complete. Work is
-proceeding on Phase 1 — the first fast structure (`Long → V` SwissTable-style
-map) that demonstrates the speed win. Phases 2–3 add the clean-room
-`FunnelHashTable` and `ElasticHashTable`; Phase 4 adds the concurrent variant.
+**Status:** Phases 0–1 are complete: the foundation and harness, the `(n, δ)`
+sizing formulas (cross-checked against the `sternma/optopenhash` oracle), and the
+first fast structures — `SwissLongMap<V>` and the fully-primitive `LongLongMap`
+(`Long → Long`) — that demonstrate the speed win (memory-first, and faster at
+scale). Phase 2 adds `FunnelLongMap<V>`, the clean-room funnel-hashing structure
+(the first faithful JVM/KMP port), positioned as a bounded-worst-case specialist
+for very high load. Phase 3 adds `ElasticHashTable`; Phase 4 adds the concurrent
+variant.
 
 Read [`.agents/guidelines/jvm-project.md`](../.agents/guidelines/jvm-project.md)
 for the shared build stack, coding style, tests, and versioning policy that

@@ -24,4 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-004")
+package io.spine.dependency.storage
+
+/**
+ * The PostgreSQL JDBC driver (pgJDBC).
+ *
+ * Used by the PostgreSQL-based storage tests to connect to a real PostgreSQL server.
+ *
+ * @see <a href="https://github.com/pgjdbc/pgjdbc">PostgreSQL JDBC Driver at GitHub</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object PostgreSql {
+    private const val version = "42.7.11"
+    const val connector = "org.postgresql:postgresql:$version"
+}
