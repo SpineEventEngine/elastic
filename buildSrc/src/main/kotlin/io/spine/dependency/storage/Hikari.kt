@@ -24,4 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-004")
+package io.spine.dependency.storage
+
+/**
+ * HikariCP — a fast, lightweight JDBC connection pool.
+ *
+ * The JDBC storage uses it to pool database connections.
+ *
+ * @see <a href="https://github.com/brettwooldridge/HikariCP">HikariCP at GitHub</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object Hikari {
+    private const val version = "7.1.0"
+    const val lib = "com.zaxxer:HikariCP:$version"
+}

@@ -24,4 +24,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-004")
+package io.spine.dependency.storage
+
+/**
+ * HyperSQL DataBase (HSQLDB) — a relational database engine written in Java, used in its
+ * in-memory mode for exercising the JDBC storage in tests.
+ *
+ * HSQLDB is hosted on SourceForge rather than GitHub.
+ *
+ * @see <a href="https://hsqldb.org/">HyperSQL Database site</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object HsqlDb {
+    private const val version = "2.7.4"
+    const val lib = "org.hsqldb:hsqldb:$version"
+}

@@ -24,4 +24,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-004")
+package io.spine.dependency.storage
+
+/**
+ * The H2 Database Engine — a fast, in-memory/embedded SQL database used for exercising
+ * the JDBC storage in tests.
+ *
+ * @see <a href="https://github.com/h2database/h2database">H2 Database Engine at GitHub</a>
+ * @see <a href="https://h2database.com/">H2 Database Engine site</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object H2 {
+    private const val version = "2.4.240"
+    const val lib = "com.h2database:h2:$version"
+}

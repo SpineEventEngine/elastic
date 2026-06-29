@@ -24,4 +24,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-004")
+package io.spine.dependency.storage
+
+/**
+ * QueryDSL — a framework for constructing type-safe SQL-like queries in Java.
+ *
+ * The JDBC storage uses the SQL module to build database queries.
+ *
+ * @see <a href="https://github.com/querydsl/querydsl">QueryDSL at GitHub</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object QueryDsl {
+    private const val version = "5.1.0"
+    private const val group = "com.querydsl"
+
+    /**
+     * The SQL module of QueryDSL.
+     */
+    const val sql = "$group:querydsl-sql:$version"
+}
