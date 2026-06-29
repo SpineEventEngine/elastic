@@ -78,19 +78,17 @@ kotlin {
     }
 }
 
-// Pin transitive versions that dependency resolution would otherwise get wrong:
-//
-//  * coroutines-test and kotest pull conflicting transitive `atomicfu` versions
-//    (0.23.1 / 0.26.1) into the Native test klib compile, and KMP klib
-//    resolution fails on version conflicts rather than picking the highest.
-//  * `base-testlib` (added to `jvmTest` by `kmp-module`) drags in a stale
-//    `spine-annotations` via its POM; pin it to the current Base-family version
-//    so it matches `spine-base` and resolves like the rest of the Spine stack.
-//
-// Force config's resolvable versions across all configurations.
+// coroutines-test and kotest pull conflicting transitive `atomicfu` versions
+// (0.23.1 / 0.26.1) into the Native test klib compile, and KMP klib resolution
+// fails on version conflicts rather than picking the highest. Force config's
+// resolvable version across all configurations.
 configurations.all {
     resolutionStrategy {
         force(AtomicFu.lib)
+        // `base-testlib` (pulled into `jvmTest` by `kmp-module`) transitively depends on an
+        // older `spine-annotations` than the `Base` module this project targets. Align it to
+        // `Base`'s version so resolution uses the already-cached artifact instead of trying to
+        // fetch the stale transitive version from GitHub Packages.
         force(Base.annotations)
     }
 }
