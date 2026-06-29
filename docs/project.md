@@ -3,8 +3,7 @@
 ## Overview
 
 `elastic` is a Kotlin Multiplatform library of high-performance hash-table data
-structures, published under `io.spine` as part of the Spine SDK organisation.
-It pursues two deliberately separate goals. The first is the
+structures. It pursues two deliberately separate goals. The first is the
 *provable speed win*: primitive-specialized, SwissTable-style open-addressing
 maps (leading with `Long → V`) that are much faster and more compact than the
 platform standard-library maps by eliminating key boxing — the project's stated
@@ -25,7 +24,7 @@ namesake structures honestly. See
 
 **Role in the org:** a standalone Kotlin Multiplatform **library** (not a tool
 or Gradle plugin). It depends on the shared Spine `config` submodule for build
-conventions but has no runtime dependency on other Spine SDK modules.
+conventions but has no runtime dependency on Spine SDK modules.
 
 **Targets:** JVM plus Kotlin/Native — `macosArm64`, `linuxX64`,
 `linuxArm64`, `mingwX64`, `iosArm64`, `iosSimulatorArm64`. JS and Wasm are
@@ -66,11 +65,14 @@ boxing elimination and is *gated on primitive keys*; object-key maps may only
 break even with `HashMap`. Every published number names its baseline and
 compares primitive-vs-primitive at an equalized load factor.
 
-**Status:** Phase 0 (foundation, harness, and the `(n, δ)` sizing formulas
-cross-checked against the `sternma/optopenhash` oracle) is complete. Work is
-proceeding on Phase 1 — the first fast structure (`Long → V` SwissTable-style
-map) that demonstrates the speed win. Phases 2–3 add the clean-room
-`FunnelHashTable` and `ElasticHashTable`; Phase 4 adds the concurrent variant.
+**Status:** Phases 0–1 are complete: the foundation and harness, the `(n, δ)`
+sizing formulas (cross-checked against the `sternma/optopenhash` oracle), and the
+first fast structures — `SwissLongMap<V>` and the fully-primitive `LongLongMap`
+(`Long → Long`) — that demonstrate the speed win (memory-first, and faster at
+scale). Phase 2 adds `FunnelLongMap<V>`, the clean-room funnel-hashing structure
+(the first faithful JVM/KMP port), positioned as a bounded-worst-case specialist
+for very high load. Phase 3 adds `ElasticHashTable`; Phase 4 adds the concurrent
+variant.
 
 Read [`.agents/guidelines/jvm-project.md`](../.agents/guidelines/jvm-project.md)
 for the shared build stack, coding style, tests, and versioning policy that
