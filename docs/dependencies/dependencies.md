@@ -1,6 +1,6 @@
 
 
-# Dependencies of `io.spine:benchmarks:1.0.0-SNAPSHOT-005`
+# Dependencies of `io.spine:benchmarks:1.0.0-SNAPSHOT-006`
 
 ## Runtime
 ## Compile, tests, and tooling
@@ -298,14 +298,14 @@
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Jun 29 16:09:50 WEST 2026** using 
+This report was generated on **Mon Jun 29 16:17:16 WEST 2026** using 
 [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under 
 [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
 
 
 
 
-# Dependencies of `io.spine:elastic:1.0.0-SNAPSHOT-005`
+# Dependencies of `io.spine:elastic:1.0.0-SNAPSHOT-006`
 
 ## Runtime
 ## Compile, tests, and tooling
@@ -1509,6 +1509,6 @@ This report was generated on **Mon Jun 29 16:09:50 WEST 2026** using
 
 The dependencies distributed under several licenses, are used according their commercial-use-friendly license.
 
-This report was generated on **Mon Jun 29 16:09:44 WEST 2026** using 
+This report was generated on **Mon Jun 29 16:17:10 WEST 2026** using 
 [Gradle-License-Report plugin](https://github.com/jk1/Gradle-License-Report) by Evgeny Naumenko, licensed under 
 [Apache 2.0 License](https://github.com/jk1/Gradle-License-Report/blob/master/LICENSE).
