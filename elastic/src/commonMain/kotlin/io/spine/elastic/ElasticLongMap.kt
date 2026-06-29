@@ -185,17 +185,28 @@ public class ElasticLongMap<V> public constructor(
     private var growthLeft: Int = tables.maxInserts
 
     /**
-     * The number of slots examined by the most recent search (any of [get],
-     * [containsKey], the lookup phase of [put], or [remove]). Internal instrumentation
-     * for the probe-count tests; not part of the public surface.
+     * The number of slots examined by the most recent search **on the current table**
+     * (any of [get], [containsKey], the lookup phase of [put], or [remove]). Internal
+     * instrumentation for the probe-count tests; not part of the public surface.
+     *
+     * The counter lives on the [Tables] instance, which a rebuild replaces, so it is
+     * exact only for operations that do not rebuild — a [put] that triggers a rebuild
+     * publishes a fresh table on which no search has run. The probe-count tests read it
+     * only after rebuild-free operations (a lookup, or a fill of a pre-sized table).
      */
     internal val lastProbes: Int
         get() = tables.probes
 
     /**
-     * The number of slots examined by the most recent [put]'s placement descent.
-     * Internal instrumentation: the amortized mean of this over a fill is the elastic
-     * `O(1)`-amortized insertion metric the probe-bound test gates on. Not public.
+     * The number of slots examined by the most recent placement descent **on the current
+     * table**. Internal instrumentation: the amortized mean of this over a pre-sized
+     * (rebuild-free) fill is the elastic `O(1)`-amortized insertion metric the
+     * probe-bound test gates on. Not public.
+     *
+     * As with [lastProbes], the counter lives on the [Tables] instance: a [put] that
+     * triggers a rebuild leaves it reflecting the rebuild drain's re-insertions on the
+     * fresh table, not the triggering call, so it is meaningful only for rebuild-free
+     * puts (which is how the probe-bound test measures it).
      */
     internal val lastPlacementProbes: Int
         get() = tables.placementProbes
