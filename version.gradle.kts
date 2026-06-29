@@ -24,4 +24,4 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-val versionToPublish: String by extra("1.0.0-SNAPSHOT-005")
+val versionToPublish: String by extra("1.0.0-SNAPSHOT-006")
