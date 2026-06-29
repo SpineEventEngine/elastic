@@ -1,3 +1,4 @@
+[![arXiv][arxiv-badge]][arxiv-abs]
 [![Ubuntu build][ubuntu-build-badge]][gh-actions]
 [![codecov][codecov-badge]][codecov] &nbsp;
 [![license][license-badge]][license]
@@ -63,6 +64,8 @@ detail.
 
 - `config` — shared repository configuration.
 
+[arxiv-badge]: https://img.shields.io/badge/arxiv%20paper-2501.02305-b31b1b.svg
+[arxiv-abs]: https://arxiv.org/abs/2501.02305
 [paper]: https://arxiv.org/pdf/2501.02305
 [gh-actions]: https://github.com/SpineEventEngine/elastic/actions
 [ubuntu-build-badge]: https://github.com/SpineEventEngine/elastic/actions/workflows/build-on-ubuntu.yml/badge.svg
