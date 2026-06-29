@@ -77,6 +77,13 @@ internal object ElasticSizing {
      * The size of each level, summing to exactly [capacity]. Every level but the
      * last holds `remaining / 2^(levels - i)` slots; the last takes whatever
      * remains.
+     *
+     * This is the **paper / `sternma`-faithful** geometric split (smallest level
+     * first, sizes not powers of two — e.g. `levelSizes(16) = [1, 1, 3, 11]`),
+     * retained only as the cross-language sizing cross-check. The `ElasticLongMap`
+     * does **not** allocate from this; it uses [binaryLevelSizes] so each level
+     * admits full-coverage triangular probing. The two functions differ in
+     * ordering, in level sizes, **and** in count — see [binaryLevelSizes].
      */
     fun levelSizes(capacity: Int): IntArray {
         val levels = levelCount(capacity)
@@ -92,14 +99,53 @@ internal object ElasticSizing {
     }
 
     /**
-     * The per-level probe budget for a level whose free-slot fraction is [load],
-     * given target [delta]. Mirrors the reference:
-     * `max(1, c * min(log2(1/load), log2(1/delta)))`.
+     * The level split the `ElasticLongMap` actually allocates from: **largest-first
+     * power-of-two sizes** `[capacity/2, capacity/4, …, 2, 1, 1]`, summing to
+     * exactly [capacity].
+     *
+     * Unlike [levelSizes] (the oracle-faithful, smallest-first, non-power-of-two
+     * arithmetic reference), every level here is a power of two so that triangular
+     * probing `(h + j(j+1)/2) mod size` visits the level's slots exactly once —
+     * full coverage, which the reference's quadratic probing on prime-ish sizes
+     * lacks (it reaches only ≈half the slots and so cannot fill to high load). The
+     * two trailing size-1 levels make the geometric series (which sums to
+     * `capacity - 2`) reach exactly [capacity], so this returns **one more** level
+     * than [levelCount]: `binaryLevelSizes(capacity).size == levelCount(capacity) + 1`.
+     * The map must size every per-level array from this length, never from
+     * [levelCount].
+     *
+     * @param capacity a power of two, at least 2
      */
-    fun probeLimit(load: Double, delta: Double, c: Int = PROBE_BUDGET): Int {
+    fun binaryLevelSizes(capacity: Int): IntArray {
+        requirePositiveCapacity(capacity)
+        require(capacity >= 2 && capacity and (capacity - 1) == 0) {
+            "binaryLevelSizes requires a power-of-two capacity of at least 2: $capacity."
+        }
+        val sizes = ArrayList<Int>()
+        var size = capacity / 2
+        while (size >= 1) {
+            sizes.add(size)
+            size /= 2
+        }
+        // The descending powers [capacity/2 .. 1] sum to capacity - 1; one more
+        // size-1 level brings the total to exactly capacity.
+        sizes.add(1)
+        return sizes.toIntArray()
+    }
+
+    /**
+     * The per-level probe budget `f(ε)` for a level whose **free-slot fraction** is
+     * [freeFraction] (`ε = 1 − fill`, *not* the load factor), given target [delta].
+     * Mirrors the paper / reference: `max(1, c * min(log2(1/ε), log2(1/delta)))`.
+     *
+     * Passing the *load* (`1 − ε`) here would invert the budget — a near-empty level
+     * would get the largest budget instead of the smallest — and silently destroy the
+     * `O(1)`-amortized insertion property, so the parameter is the free fraction.
+     */
+    fun probeLimit(freeFraction: Double, delta: Double, c: Int = PROBE_BUDGET): Int {
         requireValidDelta(delta)
-        val byLoad = if (load > 0.0) log2(1.0 / load) else 0.0
+        val byFree = if (freeFraction > 0.0) log2(1.0 / freeFraction) else 0.0
         val byDelta = log2(1.0 / delta)
-        return max(1.0, c * min(byLoad, byDelta)).toInt()
+        return max(1.0, c * min(byFree, byDelta)).toInt()
     }
 }

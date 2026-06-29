@@ -71,7 +71,9 @@ first fast structures — `SwissLongMap<V>` and the fully-primitive `LongLongMap
 (`Long → Long`) — that demonstrate the speed win (memory-first, and faster at
 scale). Phase 2 adds `FunnelLongMap<V>`, the clean-room funnel-hashing structure
 (the first faithful JVM/KMP port), positioned as a bounded-worst-case specialist
-for very high load. Phase 3 adds `ElasticHashTable`; Phase 4 adds the concurrent
+for very high load. Phase 3 adds `ElasticLongMap<V>`, the namesake clean-room
+**elastic-hashing** structure — the non-greedy, three-case insertion that breaks
+the amortized-`log` barrier (`O(1)` amortized probes). Phase 4 adds the concurrent
 variant.
 
 Read [`.agents/guidelines/jvm-project.md`](../.agents/guidelines/jvm-project.md)
