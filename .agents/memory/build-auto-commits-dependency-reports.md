@@ -16,4 +16,5 @@ commit.
 **How to apply:** when preparing a feature PR, build first, then inspect `git log` /
 `git status` before committing; reset or revert the `docs/dependencies/*` churn (and the
 auto-commit) so the feature commit stays focused. Let the canonical release / version-
-bump flow regenerate the reports.
+bump flow regenerate the reports. For a PR targeting `master`, that same regeneration is
+what satisfies the [[license-reports-ci-gate]].
