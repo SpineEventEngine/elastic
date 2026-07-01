@@ -455,6 +455,43 @@ design (the DP-8 decision covers only the Phase 1 map).
 **Goal:** the project's namesake structure, with the 3-case non-greedy insertion and
 the `φ` injection.
 
+**Status — IMPLEMENTED** (branch `phase-3`); details in
+[`phase-3-elastic.md`](phase-3-elastic.md). Green on JVM + host Native (tests, detekt,
+Kover — `ElasticLongMap` 100% line, `ElasticLongMap.Tables` 98%, `ElasticCapacity`/
+`ElasticSizing` 100%). Preceded by a four-lens adversarial **pre-implementation** design
+review (GO-WITH-CHANGES; ~1.4M simulated ops found no correctness defect).
+- `ElasticLongMap<V>` (implements `OpenAddressingLongMap<V>`) — clean-room elastic hashing:
+  geometric **largest-first power-of-two levels** with **full-coverage triangular probing**
+  (a deliberate, documented departure from the `sternma` oracle's quadratic probing on
+  prime-ish sizes, which cannot reach high load), per-level golden-ratio salts, and the
+  faithful **three-case non-greedy insertion** (`δ/2` and `0.25` thresholds, the `f(ε)`
+  budget reusing `ElasticSizing.probeLimit`). Insert is **lookup-then-place** (prevents
+  cross-level duplicates under tombstones); search is **level-by-level stop-on-empty**.
+- **The `φ` injection is documented, not implemented:** search is level-by-level (as the
+  reference oracle does), a transparent simplification that only loosens the worst-case
+  *search* bound. The `O(1)`-amortized **insertion** win (the budget+deferral over two
+  adjacent levels) is `φ`-independent and is what the probe-bound CI gate asserts
+  (≈3.4 placement probes/insert, **n-independent**).
+- A **table-wide greedy fallback** in placement (the review's stranding guard) keeps the
+  used-based `ε` from ever reporting a false overflow while a slot is free. Tombstone
+  deletion (DP-8 spirit); single-pass rebuild-on-grow with reclaim-in-place — unlike
+  funnel, a full-coverage elastic rebuild cannot itself overflow, so there is no re-double
+  loop. New `internal ElasticCapacity` (power-of-two doubling, `forEntries` sized purely on
+  `maxInserts`) and `ElasticSizing.binaryLevelSizes`.
+- **Elastic degrades, it does not throw:** a degenerate hasher fills levels and the table
+  grows (every key findable) rather than failing loudly like funnel — but this is a
+  *trade-off* (`Θ(capacity)` probes, unbounded memory), and the constant-hasher test
+  asserts the probe blow-up so it is visible, not mistaken for bounded behaviour.
+- Tests (commonTest, JVM + Native): `ElasticLongMapSpec` (contract, boundary, growth,
+  pre-size with zero rebuilds, the no-premature-growth/stranding guard, the `+1` growth
+  boundary, constant-hasher graceful-growth + blow-up, the cross-level-duplicate
+  regression, heavy collisions, churn capacity-bound, reclaim-in-place, clear, validation),
+  `ElasticLongMapPropertiesSpec` (differential vs `LinkedHashMap` over clustered + wide +
+  constant-hash domains at `δ ∈ {0.1, 0.05, 0.25}`, with nulls), `ElasticLongMapProbeBoundSpec`
+  (the amortized-insertion gate + reported search cost), `ElasticCapacitySpec`, and extended
+  `ElasticSizingSpec` (`binaryLevelSizes`, the `freeFraction` rename guard). Plus
+  `ElasticLongMapBenchmark`.
+
 **Deliverables**
 - Clean-room `ElasticHashTable` from §4 with the `δ/2` / `0.25` thresholds; per-level
   salt re-randomization; differential + probe-count tests.
