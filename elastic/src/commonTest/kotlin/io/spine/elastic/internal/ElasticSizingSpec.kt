@@ -27,6 +27,7 @@
 package io.spine.elastic.internal
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlin.math.ceil
 import kotlin.math.log2
@@ -76,14 +77,60 @@ internal class ElasticSizingSpec {
     }
 
     @Test
+    fun `splits a power-of-two capacity into largest-first power-of-two levels`() {
+        ElasticSizing.binaryLevelSizes(8).toList() shouldBe listOf(4, 2, 1, 1)
+        ElasticSizing.binaryLevelSizes(16).toList() shouldBe listOf(8, 4, 2, 1, 1)
+        ElasticSizing.binaryLevelSizes(2).toList() shouldBe listOf(1, 1)
+    }
+
+    @Test
+    fun `binary level sizes sum to capacity and are non-increasing powers of two`() {
+        var capacity = ElasticCapacity.MIN
+        while (capacity <= 1 shl 20) {
+            val sizes = ElasticSizing.binaryLevelSizes(capacity)
+            withClue("capacity=$capacity sizes=${sizes.toList()}") {
+                sizes.sum() shouldBe capacity
+                for (size in sizes) {
+                    (size and (size - 1)) shouldBe 0 // a power of two
+                }
+                for (i in 1 until sizes.size) {
+                    (sizes[i] <= sizes[i - 1]) shouldBe true
+                }
+                // The two trailing size-1 levels make the binary split one longer than
+                // the paper/reference-faithful `levelSizes` count — pinned so a future
+                // reader does not "align" the two.
+                sizes.size shouldBe ElasticSizing.levelCount(capacity) + 1
+            }
+            capacity *= 2
+        }
+    }
+
+    @Test
+    fun `rejects a non-power-of-two binary level capacity`() {
+        shouldThrow<IllegalArgumentException> { ElasticSizing.binaryLevelSizes(1000) }
+        shouldThrow<IllegalArgumentException> { ElasticSizing.binaryLevelSizes(1) }
+    }
+
+    @Test
     fun `bounds the per-level probe budget by log2 of one over delta`() {
-        ElasticSizing.probeLimit(load = 0.0001, delta = 0.1) shouldBe
+        ElasticSizing.probeLimit(freeFraction = 0.0001, delta = 0.1) shouldBe
+            (4 * log2(1.0 / 0.1)).toInt()
+    }
+
+    @Test
+    fun `treats the budget argument as the free fraction rather than the load`() {
+        // A near-empty level (free fraction ~1) needs the single home probe; a near-full
+        // level (free fraction <= delta) gets the full c*log2(1/delta) budget. Passing
+        // the load (1 - free) instead would invert this, so the boundary numbers lock the
+        // semantics: budget 1 when nearly empty, 13 = floor(4*log2(10)) when nearly full.
+        ElasticSizing.probeLimit(freeFraction = 0.99, delta = 0.1) shouldBe 1
+        ElasticSizing.probeLimit(freeFraction = 0.05, delta = 0.1) shouldBe
             (4 * log2(1.0 / 0.1)).toInt()
     }
 
     @Test
     fun `keeps the probe budget at least one`() {
-        ElasticSizing.probeLimit(load = 0.9999, delta = 0.1) shouldBe 1
+        ElasticSizing.probeLimit(freeFraction = 0.9999, delta = 0.1) shouldBe 1
     }
 
     @Test
@@ -92,6 +139,8 @@ internal class ElasticSizingSpec {
         shouldThrow<IllegalArgumentException> { ElasticSizing.levelSizes(-1) }
         shouldThrow<IllegalArgumentException> { ElasticSizing.maxInserts(0, 0.1) }
         shouldThrow<IllegalArgumentException> { ElasticSizing.maxInserts(100, 0.0) }
-        shouldThrow<IllegalArgumentException> { ElasticSizing.probeLimit(load = 0.5, delta = 1.0) }
+        shouldThrow<IllegalArgumentException> {
+            ElasticSizing.probeLimit(freeFraction = 0.5, delta = 1.0)
+        }
     }
 }
