@@ -56,6 +56,16 @@
   cores ship first and are designed to be concurrency-aware (atomic table publication);
   the SWMR variant is then *derived*, targeting the SwissTable map first. Concurrent
   funnel/elastic is an unprecedented research **stretch**, not a committed deliverable.
+- **DP-13b — DECIDED (2026-07, Phase 4): stdlib `kotlin.concurrent.atomics`, NOT
+  atomicfu.** DP-13's "portable atomics from `kotlinx-atomicfu`" was amended after a
+  recon against the actual artifacts: untransformed atomicfu boxes every atomic-array
+  element (its `AtomicLongArray` is literally `Array(size) { atomic(0L) }`), and the
+  flat layout requires its Beta Gradle+compiler plugin. The Kotlin 2.1+ stdlib
+  `kotlin.concurrent.atomics` (`@ExperimentalAtomicApi`) gives flat `j.u.c.a` types on
+  JVM (typealiases; direct `invokevirtual`) and flat arrays + LLVM intrinsics on
+  Native, with no plugin. The experimental opt-in is confined to `private` internals,
+  so it never surfaces in the public API. `buildSrc`'s `AtomicFu` object stays only as
+  a forced transitive version for the native test klib compile.
 - **DP-7a — DECIDED (a): pin Kotlin to 2.3.21 + KSP 2.3.9.** KSP had no Kotlin 2.4.0
   release (latest 2.3.9), so the project is pinned to the latest 2.3.x where the codegen
   toolchain exists. KSP is applied to `elastic` (its `ksp*` tasks register and skip
@@ -505,6 +515,53 @@ funnel/elastic deletion open item from Phase 2.
 
 **Goal:** a thread-safe variant with **lock-free reads** (DP-13 / DP-13a), derived from
 the now-solid single-threaded SwissTable map.
+
+**Status — IMPLEMENTED** (branch `phase-4`); details in
+[`phase-4-swmr.md`](phase-4-swmr.md). Green on JVM + macosArm64 + iosSimulatorArm64
+(tests, detekt, Kover, Dokka). Preceded by a four-lens adversarial pre-implementation
+design review (GO-WITH-CHANGES; it scoped the linearizability claim, named the
+load-bearing invariant, and redesigned the Lincheck plan so resizes actually race);
+closed by a five-agent post-implementation review including an independent max-effort
+concurrency verification that re-derived every §1–§3 design claim from the code — all
+verified, no defects.
+- `SingleWriterSwissLongMap<V>` (implements `OpenAddressingLongMap<V>`) — one writer
+  (or externally serialized writers), lock-free bounded-step readers. Same SWAR
+  layout/probe as `SwissLongMap`; publication changes only: atomic table reference
+  (rebuilds constructed off-line in plain arrays, wrapped by the copying atomic-array
+  constructors, published by one store), atomic control words (an 8-lane group loads
+  as an immutable snapshot), atomic value slots, and **no tombstone reuse** — the
+  load-bearing simplification giving *table-state monotonicity* (lanes only
+  `EMPTY → FULL → DELETED`, keys write-once — so `remove` never zeroes keys — value
+  slots never `null → value`), which orders the plain key reads, bounds every reader
+  probe by `(maxLoad+1)·numGroups` loads, and makes a same-key reinsert always land
+  after its tombstone. `get`/`containsKey`/`put`/`remove`/`clear` are linearizable;
+  `size`/`isEmpty` are documented `ConcurrentHashMap`-style estimates (provably not
+  linearizable with a separate counter). Null values remain supported — the
+  `FULL`-control/`null`-value transient is unobservable through this API (unlike
+  `ConcurrentHashMap`, no null ban needed); an entries-view would see it, which
+  constrains the Phase 5 boxed view.
+- Atomics substrate: stdlib `kotlin.concurrent.atomics` per **DP-13b** (see decisions
+  log) — atomicfu would have boxed every array element without its Beta plugin.
+- **Lincheck 3.6** (new `org.jetbrains.lincheck` group; jvmTest): stress +
+  model-checking over three configurations — empty start, a **pre-filled
+  resize-crossing** map (7 keys at capacity 8, so the first parallel fresh-key put
+  publishes a rebuilt table mid-race), and a **constant-hash** map (every probe walks
+  one shared chain). Writer ops in one `nonParallelGroup`; `size` excluded (correctly
+  non-linearizable). A **mutation experiment** (re-adding the key-zeroing bug) showed
+  random scenarios miss the two-switch race — an explicit `addCustomScenario`
+  (`put(3) → parallel(remove(3) | get(0))`) catches it deterministically; the
+  scenario is committed.
+- Cross-thread stress in commonTest (runs on Native — the only exercise of the K/N
+  memory model): monotonic-presence across rebuilds, churn with model-replay
+  end-state, `clear()` under readers, multi-field payloads proving value-contents
+  publication.
+- Benchmarks: `SingleWriterSwissLongMapBenchmark` (kotlinx harness, the
+  single-threaded tax: lookup ~1.3–1.5× vs `SwissLongMap` at 1M, insert ≈ parity) +
+  the new **`benchmarks-jvm` raw-JMH module** (the DP-4 second tier, first needed
+  here): read scaling ~linear (smoke: 35.6/139.6/308.9 ops/µs at 1/4/8 threads;
+  lock-wrapped `SwissLongMap` collapses to 5.5; boxed `ConcurrentHashMap` scales
+  comparably — differentiators vs it stay primitive keys/memory/KMP), plus 1-writer/
+  3-reader `@Group` mixes (overwrite + churn).
 
 **Deliverables**
 - A **SWMR concurrent variant** of the `Long → V` map: readers never block (they read

@@ -36,10 +36,10 @@ package io.spine.elastic
  * it is a later, opt-in addition, and a matrix of further specializations may
  * follow.
  *
- * Implementations in the initial phase are **single-threaded**. A
- * single-writer / multiple-reader, lock-free-read variant is a separate, later
- * phase; the single-threaded cores are nevertheless designed so that variant can be
- * derived rather than retrofitted.
+ * Unless an implementation documents otherwise, it is **single-threaded** and
+ * concurrent use is undefined. [SingleWriterSwissLongMap] is the concurrent
+ * exception: it serves one writer at a time alongside any number of lock-free
+ * readers. Each implementation states its own contract.
  *
  * @param V the type of mapped values
  */

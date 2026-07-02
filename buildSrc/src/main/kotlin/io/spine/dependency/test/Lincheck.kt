@@ -24,17 +24,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
+package io.spine.dependency.test
+
+/**
+ * The dependency on Lincheck, the JetBrains framework for testing concurrent
+ * data structures on the JVM, used for the linearizability tests of the
+ * single-writer / multi-reader maps. Test-scoped only; not published.
+ *
+ * The 3.x line lives under the `org.jetbrains.lincheck` group; the former
+ * `org.jetbrains.kotlinx:lincheck` coordinates are the frozen 2.x legacy.
+ *
+ * @see <a href="https://github.com/JetBrains/lincheck">Lincheck</a>
+ */
+@Suppress("unused", "ConstPropertyName")
+object Lincheck {
+
+    // https://github.com/JetBrains/lincheck/releases
+    private const val version = "3.6"
+    const val lib = "org.jetbrains.lincheck:lincheck:$version"
+
+    /**
+     * The Byte Buddy version Lincheck 3.6 depends upon.
+     *
+     * Declared here so consumers can `force()` it where an older Byte Buddy
+     * arrives transitively from another test library and the build fails on
+     * the version conflict.
+     */
+    private const val byteBuddyVersion = "1.14.12"
+    const val byteBuddy = "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    const val byteBuddyAgent = "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
 }
-
-rootProject.name = "elastic"
-
-include(
-    "elastic",
-    "benchmarks",
-    "benchmarks-jvm",
-)
