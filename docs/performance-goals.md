@@ -116,6 +116,7 @@ published number; compare primitive-vs-primitive.
 JMH on the JVM (authoritative; the raw-JMH tier lives in the `benchmarks-jvm`
 module — added in Phase 4 for the multi-threaded read-scaling benchmarks that
 `kotlinx-benchmark`'s common facade cannot express, and the home for `-prof gc`
-runs), `kotlinx-benchmark` for the portable JVM + Native tiers. `@Fork ≥ 3`, warmup 5×1s, measurement 5×1s, `AverageTime`/ns. Seed key
-sets deterministically and share identical arrays across implementations. Numbers
-are reported **per platform** and never cross-compared as a single figure.
+runs), `kotlinx-benchmark` for the portable JVM + Native tiers. `@Fork ≥ 3`,
+warmup 5×1s, measurement 5×1s, `AverageTime`/ns. Seed key sets deterministically
+and share identical arrays across implementations. Numbers are reported
+**per platform** and never cross-compared as a single figure.

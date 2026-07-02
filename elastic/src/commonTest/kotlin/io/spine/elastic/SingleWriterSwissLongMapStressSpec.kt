@@ -142,8 +142,9 @@ internal class SingleWriterSwissLongMapStressSpec {
     fun `readers stay consistent under insert-remove churn across rebuilds`() =
         runTest(timeout = 3.minutes) {
             withContext(Dispatchers.Default) {
-                // A small pre-size keeps the growth budget tight, so the churn
-                // crosses many rebuilds while readers probe the sliding window.
+                // The default (smallest) capacity keeps the growth budget tight,
+                // so the churn crosses many rebuilds while readers probe the
+                // sliding window.
                 val map = SingleWriterSwissLongMap<Payload>()
                 val done = AtomicBoolean(false)
                 val readers = launchReaders(READERS, done) { random ->

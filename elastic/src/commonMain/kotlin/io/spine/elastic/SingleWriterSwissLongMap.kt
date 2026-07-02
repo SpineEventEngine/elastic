@@ -328,9 +328,9 @@ public class SingleWriterSwissLongMap<V> public constructor(
 
         /** Creates an empty table of [capacity] slots. */
         constructor(capacity: Int) : this(
-            LongArray(capacity),
-            LongArray(capacity / Swar.GROUP_WIDTH) { Swar.EMPTY_WORD },
-            arrayOfNulls(capacity),
+            keys = LongArray(capacity),
+            controlWords = LongArray(capacity / Swar.GROUP_WIDTH) { Swar.EMPTY_WORD },
+            valueSlots = arrayOfNulls(capacity),
         )
 
         /**

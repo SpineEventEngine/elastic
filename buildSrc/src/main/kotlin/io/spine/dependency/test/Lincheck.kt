@@ -44,7 +44,7 @@ object Lincheck {
     const val lib = "org.jetbrains.lincheck:lincheck:$version"
 
     /**
-     * The Byte Buddy version Lincheck 3.6 depends upon.
+     * The Byte Buddy version the pinned Lincheck depends upon.
      *
      * Declared here so consumers can `force()` it where an older Byte Buddy
      * arrives transitively from another test library and the build fails on

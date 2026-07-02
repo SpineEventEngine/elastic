@@ -34,9 +34,11 @@ deferred until there is demand, as the speed win is not credible there.
 - `elastic` — the library. Public API lives in `io.spine.elastic`
   (e.g. `OpenAddressingLongMap<V>`, `LongHasher`/`fmix64`); sizing math from the
   paper lives in `io.spine.elastic.internal` (`ElasticSizing`, `FunnelSizing`).
-- `benchmarks` — a two-tier benchmark harness: `kotlinx-benchmark`
-  driving real JMH on the JVM and host-native runs, with a raw-JMH JVM tier
-  added when authoritative GC/allocation profiling is needed.
+- `benchmarks` — the portable tier of the benchmark harness:
+  `kotlinx-benchmark` driving real JMH on the JVM and host-native runs.
+- `benchmarks-jvm` — the raw-JMH JVM tier: multi-threaded read-scaling and
+  mixed-load benchmarks that the `kotlinx-benchmark` facade cannot express,
+  and the home for `-prof gc` runs.
 - `config` — the shared Spine repository-configuration submodule.
 
 **Design principles:**
@@ -77,7 +79,7 @@ non-greedy, three-case insertion that breaks the amortized-`log` barrier
 (`O(1)` amortized probes). Phase 4 adds `SingleWriterSwissLongMap<V>`, the
 concurrent variant of the Phase-1 map: one writer, any number of lock-free
 readers, linearizable key-addressed operations — verified with Lincheck on the
-JVM and cross-thread stress tests on Native.
+JVM and with cross-thread stress tests on both JVM and Native.
 
 Read [`.agents/guidelines/jvm-project.md`](../.agents/guidelines/jvm-project.md)
 for the shared build stack, coding style, tests, and versioning policy that

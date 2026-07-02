@@ -60,8 +60,9 @@ import org.openjdk.jmh.annotations.Warmup
  * measure throughput only — they make no latency claims.
  *
  * Each thread walks the shuffled key set from its own random starting position, one
- * lookup per invocation, and returns the value so JMH blackholes it. JMH forks once
- * per `impl` value, so each fork's call sites stay monomorphic through the adapter.
+ * lookup per invocation, and returns the value so JMH blackholes it. JMH runs
+ * separate forks per `impl` value, so each fork's call sites stay monomorphic
+ * through the adapter.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
