@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.elastic.benchmarks.jmh
+package io.spine.elastic.benchmark.jmh
 
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
