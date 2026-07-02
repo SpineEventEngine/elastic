@@ -24,10 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.elastic.benchmarks
+package io.spine.elastic.benchmark
 
-import io.spine.elastic.LongHasher
-import io.spine.elastic.LongLongMap
+import io.spine.elastic.FunnelLongMap
 import kotlinx.benchmark.Benchmark
 import kotlinx.benchmark.BenchmarkMode
 import kotlinx.benchmark.BenchmarkTimeUnit
@@ -42,47 +41,46 @@ import kotlinx.benchmark.State
 import kotlinx.benchmark.Warmup
 
 /**
- * Measurements of the fully primitive [LongLongMap] (`Long` keys *and* `Long`
- * values, neither boxed), the true primitive-versus-primitive counterpart of
- * `java.util.HashMap<Long, Long>` in [StdlibHashMapBenchmark].
+ * Measurements of the [FunnelLongMap] with `Long` keys and values, laid out against
+ * [StdlibHashMapBenchmark] and [SwissLongMapBenchmark] — same sizes and key set — so
+ * the funnel structure's behaviour can be read directly against the standard library
+ * and the Phase-1 fast map on each platform (JVM via JMH, and Kotlin/Native).
  *
- * Same sizes and key set as the other benchmarks. Lookups sum the returned `long`
- * into a sink consumed once through the [Blackhole], so the hot path stays free of
- * the boxing a per-result `consume` would introduce — the whole point of this map.
- * `lookupHitShuffled` is the fair random-access gate (see [SwissLongMapBenchmark]).
+ * The `delta` parameter sweeps the target empty-fraction: `0.1` (90 % load, the
+ * ordinary regime where funnel hashing is *expected to trail* `HashMap` and
+ * [io.spine.elastic.SwissLongMap] — it optimises worst-case probe counts, not
+ * throughput) and `0.01` (99 % load, the high-load regime the structure is built for).
+ * Numbers are framed honestly per `docs/performance-goals.md`: the interest is the
+ * high-load insert behaviour and the lookup-at-scale cost, not beating the fast map on
+ * general lookups.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(BenchmarkTimeUnit.NANOSECONDS)
 @Warmup(iterations = 5, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
-class LongLongMapBenchmark {
+class FunnelLongMapBenchmark {
 
     @Param("10000", "1000000")
     var size: Int = 0
 
+    @Param("0.1", "0.01")
+    var delta: Double = 0.1
+
     private var keys: LongArray = LongArray(0)
     private var shuffledKeys: LongArray = LongArray(0)
-    private var map: LongLongMap = LongLongMap()
-    private var fibonacciMap: LongLongMap = LongLongMap()
+    private var map: FunnelLongMap<Long> = FunnelLongMap()
 
     @Setup
     fun setup() {
         val n = size
         keys = LongArray(n) { it.toLong() }
         shuffledKeys = shuffle(keys)
-        val prepared = LongLongMap(expectedSize = n)
+        val prepared = FunnelLongMap<Long>(expectedSize = n, delta = delta)
         for (key in keys) {
             prepared.put(key, key)
         }
         map = prepared
-        // Same map but with the single-multiply Fibonacci hasher instead of the
-        // default fmix64 (two multiplies) — to quantify the hash's in-cache cost.
-        val fibonacci = LongLongMap(expectedSize = n, hasher = LongHasher.Fibonacci)
-        for (key in keys) {
-            fibonacci.put(key, key)
-        }
-        fibonacciMap = fibonacci
     }
 
     @Benchmark
@@ -90,7 +88,7 @@ class LongLongMapBenchmark {
         val m = map
         var sink = 0L
         for (key in keys) {
-            sink += m[key]
+            sink += m[key] ?: 0L
         }
         blackhole.consume(sink)
     }
@@ -100,24 +98,25 @@ class LongLongMapBenchmark {
         val m = map
         var sink = 0L
         for (key in shuffledKeys) {
-            sink += m[key]
+            sink += m[key] ?: 0L
         }
         blackhole.consume(sink)
     }
 
     @Benchmark
-    fun lookupHitShuffledFastHash(blackhole: Blackhole) {
-        val m = fibonacciMap
+    fun lookupMiss(blackhole: Blackhole) {
+        val m = map
+        val absentOffset = size.toLong()
         var sink = 0L
-        for (key in shuffledKeys) {
-            sink += m[key]
+        for (key in keys) {
+            sink += m[key + absentOffset] ?: 0L
         }
         blackhole.consume(sink)
     }
 
     @Benchmark
     fun insertAllPresized(blackhole: Blackhole) {
-        val fresh = LongLongMap(expectedSize = size)
+        val fresh = FunnelLongMap<Long>(expectedSize = size, delta = delta)
         for (key in keys) {
             fresh.put(key, key)
         }
@@ -126,7 +125,7 @@ class LongLongMapBenchmark {
 
     @Benchmark
     fun insertAllGrowing(blackhole: Blackhole) {
-        val fresh = LongLongMap()
+        val fresh = FunnelLongMap<Long>(delta = delta)
         for (key in keys) {
             fresh.put(key, key)
         }

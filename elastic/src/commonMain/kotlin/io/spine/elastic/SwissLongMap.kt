@@ -33,8 +33,8 @@ import io.spine.elastic.internal.Swar
  * A SwissTable-style open-addressing map from primitive `Long` keys to values of
  * type [V].
  *
- * This is the lead specialization of the library and the Phase 1 proof that
- * primitive specialization beats the boxing standard-library `HashMap`: keys live in
+ * This is the lead specialization of the library and the proof that primitive
+ * specialization beats the boxing standard-library `HashMap`: keys live in
  * a `LongArray`, so neither lookups nor insertions box a key.
  *
  * ### Layout
@@ -58,9 +58,10 @@ import io.spine.elastic.internal.Swar
  * This implementation is **single-threaded**: there is no
  * synchronization, and concurrent mutation is undefined. The storage is kept in one
  * immutable storage holder swapped by a single field write on resize, and inserts
- * publish a slot's key and value before its control byte — structural seams that let
- * the single-writer / multiple-reader, lock-free-read variant be *derived* in a
- * later phase rather than retrofitted. No thread-safety is claimed here.
+ * publish a slot's key and value before its control byte — the structural seams from
+ * which [SingleWriterSwissLongMap], the single-writer / multi-reader,
+ * lock-free-read variant, is derived. No thread-safety is claimed here; reach for
+ * that variant when readers are concurrent.
  *
  * @param V the type of mapped values
  * @param expectedSize a hint for the number of entries, used to pre-size the table

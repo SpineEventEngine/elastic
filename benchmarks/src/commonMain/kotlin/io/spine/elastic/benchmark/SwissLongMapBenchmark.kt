@@ -24,7 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.elastic.benchmarks
+package io.spine.elastic.benchmark
 
 import io.spine.elastic.SwissLongMap
 import kotlinx.benchmark.Benchmark

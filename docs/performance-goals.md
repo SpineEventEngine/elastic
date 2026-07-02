@@ -79,6 +79,31 @@ the JVM's here, confirming it is the more beatable baseline.
   **lookup-at-scale cost** honestly (the φ ordering can regress lookups at large
   sizes — this is expected, not a bug).
 
+**Phase 4 — `SingleWriterSwissLongMap` (one writer, lock-free readers):**
+- **Correctness is the gate, not speed.** Linearizability of the key-addressed
+  operations (`get`/`containsKey`/`put`/`remove`/`clear`) verified by Lincheck in
+  stress and model-checking modes, over three configurations: empty start, a
+  pre-filled map whose first parallel insert publishes a rebuilt table mid-race,
+  and a constant-hash map where every probe walks one shared chain. The suite
+  demonstrably catches the guarded bug class: a deliberate mutation (zeroing the
+  key bytes on removal) fails the constant-hash scenario immediately. Cross-thread
+  stress tests (one writer + racing readers) run on JVM **and Native**.
+- **Read scaling — the point of lock-free reads.** Reader throughput scales
+  ~linearly with reader count. *Smoke-measured (1 fork, noisy machine —
+  authoritative matrix deferred to Phase 6): 35.6 → 139.6 → 308.9 ops/µs at
+  1/4/8 reader threads over a 1M-entry map (~8.7× at 8 threads). A lock-guarded
+  `SwissLongMap` collapses under the same load (28.1 → 9.0 → 5.5 ops/µs).
+  Boxed `ConcurrentHashMap<Long, Long>` scales comparably (282.6 ops/µs at 8
+  threads) — against it the differentiators remain primitive keys, memory
+  footprint, and KMP portability, not raw read throughput.*
+- **Single-threaded overhead — the honest tax.** Versus `SwissLongMap` at 1M
+  entries (smoke): random-access lookup ~1.3–1.5× slower (seq-cst control-word
+  and value loads); presized insert ≈ parity. Prefer `SwissLongMap` when the map
+  is confined to one thread.
+- `size`/`isEmpty` are weakly consistent moment-in-time estimates
+  (`ConcurrentHashMap`-style), documented as such and excluded from
+  linearizability checking.
+
 **Fairness gates (all phases):** equalize load factor across maps; pre-size each
 in its own units; always include an **adversarial/clustered key set**; lookup
 benchmarks must include a **random-access (shuffled) order**, not just sequential
@@ -88,8 +113,10 @@ published number; compare primitive-vs-primitive.
 
 ## Methodology
 
-JMH on the JVM (authoritative; add the raw-JMH tier with `-prof gc` for
-bytes/op when first needed), `kotlinx-benchmark` for the portable JVM + Native
-tiers. `@Fork ≥ 3`, warmup 5×1s, measurement 5×1s, `AverageTime`/ns. Seed key
-sets deterministically and share identical arrays across implementations. Numbers
-are reported **per platform** and never cross-compared as a single figure.
+JMH on the JVM (authoritative; the raw-JMH tier lives in the `benchmarks-jvm`
+module — added in Phase 4 for the multi-threaded read-scaling benchmarks that
+`kotlinx-benchmark`'s common facade cannot express, and the home for `-prof gc`
+runs), `kotlinx-benchmark` for the portable JVM + Native tiers. `@Fork ≥ 3`,
+warmup 5×1s, measurement 5×1s, `AverageTime`/ns. Seed key sets deterministically
+and share identical arrays across implementations. Numbers are reported
+**per platform** and never cross-compared as a single figure.

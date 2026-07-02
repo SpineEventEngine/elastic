@@ -24,27 +24,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.elastic.benchmarks
-
-import kotlin.random.Random
-
-/** Fixed seed so the shuffled lookup order is identical across maps and runs. */
-internal const val SHUFFLE_SEED = 42L
+package io.spine.dependency.test
 
 /**
- * Returns a deterministically shuffled copy of [keys] (Fisher–Yates).
+ * The dependency on Lincheck, the JetBrains framework for testing concurrent
+ * data structures on the JVM, used for the linearizability tests of the
+ * single-writer / multi-reader maps. Test-scoped only; not published.
  *
- * Lookup benchmarks scan keys in this random order rather than insertion order, so
- * the measurement does not flatter a chaining map's insertion-order node locality.
+ * The 3.x line lives under the `org.jetbrains.lincheck` group; the former
+ * `org.jetbrains.kotlinx:lincheck` coordinates are the frozen 2.x legacy.
+ *
+ * @see <a href="https://github.com/JetBrains/lincheck">Lincheck</a>
  */
-internal fun shuffle(keys: LongArray): LongArray {
-    val out = keys.copyOf()
-    val random = Random(SHUFFLE_SEED)
-    for (i in out.indices.reversed()) {
-        val j = random.nextInt(i + 1)
-        val tmp = out[i]
-        out[i] = out[j]
-        out[j] = tmp
-    }
-    return out
+@Suppress("unused", "ConstPropertyName")
+object Lincheck {
+
+    // https://github.com/JetBrains/lincheck/releases
+    private const val version = "3.6"
+    const val lib = "org.jetbrains.lincheck:lincheck:$version"
+
+    /**
+     * The Byte Buddy version the pinned Lincheck depends upon.
+     *
+     * Declared here so consumers can `force()` it where an older Byte Buddy
+     * arrives transitively from another test library and the build fails on
+     * the version conflict.
+     */
+    private const val byteBuddyVersion = "1.14.12"
+    const val byteBuddy = "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    const val byteBuddyAgent = "net.bytebuddy:byte-buddy-agent:$byteBuddyVersion"
 }

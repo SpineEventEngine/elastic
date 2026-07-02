@@ -34,9 +34,11 @@ deferred until there is demand, as the speed win is not credible there.
 - `elastic` — the library. Public API lives in `io.spine.elastic`
   (e.g. `OpenAddressingLongMap<V>`, `LongHasher`/`fmix64`); sizing math from the
   paper lives in `io.spine.elastic.internal` (`ElasticSizing`, `FunnelSizing`).
-- `benchmarks` — a two-tier benchmark harness: `kotlinx-benchmark`
-  driving real JMH on the JVM and host-native runs, with a raw-JMH JVM tier
-  added when authoritative GC/allocation profiling is needed.
+- `benchmarks` — the portable tier of the benchmark harness:
+  `kotlinx-benchmark` driving real JMH on the JVM and host-native runs.
+- `benchmarks-jvm` — the raw-JMH JVM tier: multi-threaded read-scaling and
+  mixed-load benchmarks that the `kotlinx-benchmark` facade cannot express,
+  and the home for `-prof gc` runs.
 - `config` — the shared Spine repository-configuration submodule.
 
 **Design principles:**
@@ -54,8 +56,9 @@ deferred until there is demand, as the speed win is not credible there.
   it crosses a generic boundary, so specializations are hand-written first, with
   code generation a possible later step.
 - **Concurrency-aware cores.** Single-threaded structures are designed so a
-  single-writer / multi-reader, lock-free-read variant can be *derived* in a later
-  phase (atomic table publication, immutable group snapshots), not retrofitted.
+  single-writer / multi-reader, lock-free-read variant can be *derived* (atomic
+  table publication, immutable group snapshots), not retrofitted —
+  `SingleWriterSwissLongMap` is that derivation for the SwissTable map.
 
 **Honest positioning (load-bearing):** the baseline this project commits to
 beating is the *platform standard library* (boxed `java.util.HashMap`; the
@@ -65,16 +68,18 @@ boxing elimination and is *gated on primitive keys*; object-key maps may only
 break even with `HashMap`. Every published number names its baseline and
 compares primitive-vs-primitive at an equalized load factor.
 
-**Status:** Phases 0–1 are complete: the foundation and harness, the `(n, δ)`
-sizing formulas (cross-checked against the `sternma/optopenhash` oracle), and the
+**Status:** Phases 0–3 are complete: the foundation and harness, the `(n, δ)`
+sizing formulas (cross-checked against the `sternma/optopenhash` oracle), the
 first fast structures — `SwissLongMap<V>` and the fully-primitive `LongLongMap`
 (`Long → Long`) — that demonstrate the speed win (memory-first, and faster at
-scale). Phase 2 adds `FunnelLongMap<V>`, the clean-room funnel-hashing structure
-(the first faithful JVM/KMP port), positioned as a bounded-worst-case specialist
-for very high load. Phase 3 adds `ElasticLongMap<V>`, the namesake clean-room
-**elastic-hashing** structure — the non-greedy, three-case insertion that breaks
-the amortized-`log` barrier (`O(1)` amortized probes). Phase 4 adds the concurrent
-variant.
+scale), `FunnelLongMap<V>` (the clean-room funnel-hashing structure, the first
+faithful JVM/KMP port, a bounded-worst-case specialist for very high load), and
+`ElasticLongMap<V>`, the namesake clean-room **elastic-hashing** structure — the
+non-greedy, three-case insertion that breaks the amortized-`log` barrier
+(`O(1)` amortized probes). Phase 4 adds `SingleWriterSwissLongMap<V>`, the
+concurrent variant of the Phase-1 map: one writer, any number of lock-free
+readers, linearizable key-addressed operations — verified with Lincheck on the
+JVM and with cross-thread stress tests on both JVM and Native.
 
 Read [`.agents/guidelines/jvm-project.md`](../.agents/guidelines/jvm-project.md)
 for the shared build stack, coding style, tests, and versioning policy that

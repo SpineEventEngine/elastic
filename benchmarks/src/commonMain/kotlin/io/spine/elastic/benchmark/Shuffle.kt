@@ -24,4 +24,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-extra.set("versionToPublish", "1.0.0-SNAPSHOT-009")
+package io.spine.elastic.benchmark
+
+import kotlin.random.Random
+
+/** Fixed seed so the shuffled lookup order is identical across maps and runs. */
+internal const val SHUFFLE_SEED = 42L
+
+/**
+ * Returns a deterministically shuffled copy of [keys] (Fisher–Yates).
+ *
+ * Lookup benchmarks scan keys in this random order rather than insertion order, so
+ * the measurement does not flatter a chaining map's insertion-order node locality.
+ */
+internal fun shuffle(keys: LongArray): LongArray {
+    val out = keys.copyOf()
+    val random = Random(SHUFFLE_SEED)
+    for (i in out.indices.reversed()) {
+        val j = random.nextInt(i + 1)
+        val tmp = out[i]
+        out[i] = out[j]
+        out[j] = tmp
+    }
+    return out
+}

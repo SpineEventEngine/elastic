@@ -24,17 +24,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
+package io.spine.gradle.fs
+
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+
+@DisplayName("`LazyTempPath` should")
+class LazyTempPathSpec {
+
+    @Test
+    fun `create the directory on the first use`() {
+        val directory = LazyTempPath("created").toFile()
+
+        directory.exists() shouldBe true
+        directory.isDirectory shouldBe true
+    }
+
+    @Test
+    fun `create the directory under the system temporary directory`() {
+        val path = LazyTempPath("under-tmp").toString()
+
+        path shouldContain systemTempDir()
+    }
+
+    @Test
+    fun `create the directory under a folder named after its package`() {
+        val path = LazyTempPath("under-base").toString()
+
+        path shouldContain LazyTempPath::class.java.packageName
+    }
+
+    @Test
+    fun `place all instances under the same base directory`() {
+        val first = LazyTempPath("first").toFile()
+        val second = LazyTempPath("second").toFile()
+
+        first.parentFile shouldBe second.parentFile
+        first.parentFile.toString() shouldBe SpineTempDir.path.toString()
     }
 }
 
-rootProject.name = "elastic"
-
-include(
-    "elastic",
-    "benchmarks",
-    "benchmarks-jvm",
-)
+private fun systemTempDir(): String = System.getProperty("java.io.tmpdir")

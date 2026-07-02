@@ -24,9 +24,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.elastic.benchmarks
+package io.spine.elastic.benchmark
 
-import io.spine.elastic.ElasticLongMap
+import io.spine.elastic.SingleWriterSwissLongMap
 import kotlinx.benchmark.Benchmark
 import kotlinx.benchmark.BenchmarkMode
 import kotlinx.benchmark.BenchmarkTimeUnit
@@ -41,43 +41,43 @@ import kotlinx.benchmark.State
 import kotlinx.benchmark.Warmup
 
 /**
- * Measurements of the [ElasticLongMap] with `Long` keys and values, laid out against
- * [StdlibHashMapBenchmark], [SwissLongMapBenchmark] and [FunnelLongMapBenchmark] — same
- * sizes and key set — so the elastic structure's behaviour can be read directly against
- * the standard library and the Phase-1/2 maps on each platform (JVM via JMH, and
- * Kotlin/Native).
+ * Measurements of the concurrent [SingleWriterSwissLongMap] with `Long` keys and
+ * values, laid out to be read directly against [SwissLongMapBenchmark] — the same
+ * sizes and key set — so the single-threaded overhead of the concurrent variant's
+ * atomic (volatile) control-word and value reads, and of its writer-path atomic
+ * stores, is a like-for-like delta.
  *
- * The `delta` parameter sweeps the target empty-fraction: `0.1` (90 % load, the ordinary
- * regime where elastic hashing is *expected to trail* `HashMap` and
- * [io.spine.elastic.SwissLongMap] — it optimises amortized insertion probe counts, not
- * throughput, and its level-by-level lookup trades search locality) and `0.01` (99 %
- * load, the high-load regime the structure is built for). Numbers are framed honestly per
- * `docs/performance-goals.md`: the interest is the high-load insert behaviour and the
- * lookup-at-scale cost, not beating the fast map on general lookups.
+ * These runs are single-threaded by design: they price what the concurrent variant
+ * costs when its concurrency is not exercised. The multi-threaded read-scaling
+ * numbers live in the JVM-only `benchmarks-jvm` module.
+ *
+ * It runs the mirror's operations — `lookupHit` and `lookupHitShuffled`;
+ * `lookupMiss` (keys absent from the map, exercising the stop-on-empty probe);
+ * `insertAllPresized`, the fair steady-state insert with the map pre-sized in its
+ * own units ([SingleWriterSwissLongMap]'s `expectedSize`); and `insertAllGrowing`,
+ * the same inserts into a default-capacity map, folding in rebuild cost. Each
+ * result is consumed through a [Blackhole] to defeat dead-code elimination.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(BenchmarkTimeUnit.NANOSECONDS)
 @Warmup(iterations = 5, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = BenchmarkTimeUnit.SECONDS)
-class ElasticLongMapBenchmark {
+class SingleWriterSwissLongMapBenchmark {
 
     @Param("10000", "1000000")
     var size: Int = 0
 
-    @Param("0.1", "0.01")
-    var delta: Double = 0.1
-
     private var keys: LongArray = LongArray(0)
     private var shuffledKeys: LongArray = LongArray(0)
-    private var map: ElasticLongMap<Long> = ElasticLongMap()
+    private var map: SingleWriterSwissLongMap<Long> = SingleWriterSwissLongMap()
 
     @Setup
     fun setup() {
         val n = size
         keys = LongArray(n) { it.toLong() }
         shuffledKeys = shuffle(keys)
-        val prepared = ElasticLongMap<Long>(expectedSize = n, delta = delta)
+        val prepared = SingleWriterSwissLongMap<Long>(expectedSize = n)
         for (key in keys) {
             prepared.put(key, key)
         }
@@ -117,7 +117,7 @@ class ElasticLongMapBenchmark {
 
     @Benchmark
     fun insertAllPresized(blackhole: Blackhole) {
-        val fresh = ElasticLongMap<Long>(expectedSize = size, delta = delta)
+        val fresh = SingleWriterSwissLongMap<Long>(expectedSize = size)
         for (key in keys) {
             fresh.put(key, key)
         }
@@ -126,7 +126,7 @@ class ElasticLongMapBenchmark {
 
     @Benchmark
     fun insertAllGrowing(blackhole: Blackhole) {
-        val fresh = ElasticLongMap<Long>(delta = delta)
+        val fresh = SingleWriterSwissLongMap<Long>()
         for (key in keys) {
             fresh.put(key, key)
         }

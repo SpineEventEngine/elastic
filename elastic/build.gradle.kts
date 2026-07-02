@@ -31,6 +31,7 @@ import io.spine.dependency.kotlinx.Coroutines
 import io.spine.dependency.local.Base
 import io.spine.dependency.test.Jol
 import io.spine.dependency.test.Kotest
+import io.spine.dependency.test.Lincheck
 import io.spine.gradle.report.license.LicenseReporter
 
 plugins {
@@ -73,6 +74,10 @@ kotlin {
                 // measurement (`MemoryFootprintSpec`) to size each map's object
                 // graph exactly, on the JVM. Test-scoped; not a published dependency.
                 implementation(Jol.lib)
+                // Lincheck — linearizability tests of the single-writer /
+                // multi-reader map (`SingleWriterSwissLongMapLincheckSpec`).
+                // Concurrency testing is JVM-only by nature; test-scoped.
+                implementation(Lincheck.lib)
             }
         }
     }
@@ -85,6 +90,13 @@ kotlin {
 configurations.all {
     resolutionStrategy {
         force(AtomicFu.lib)
+        // Lincheck (a `jvmTest` dependency) requests an older `atomicfu-jvm`
+        // than the version forced above, and a newer Byte Buddy than
+        // `kotlinx-coroutines-debug` (pulled by Kotest) does. The build fails
+        // on version conflicts, so align both families explicitly: atomicfu to
+        // config's version, Byte Buddy to Lincheck's (the highest requested).
+        force("${AtomicFu.std}-jvm:${AtomicFu.version}")
+        force(Lincheck.byteBuddy, Lincheck.byteBuddyAgent)
         // `base-testlib` (pulled into `jvmTest` by `kmp-module`) transitively depends on an
         // older `spine-annotations` than the `Base` module this project targets. Align it to
         // `Base`'s version so resolution uses the already-cached artifact instead of trying to

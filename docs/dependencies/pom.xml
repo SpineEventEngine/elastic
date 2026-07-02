@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine</groupId>
 <artifactId>elastic</artifactId>
-<version>1.0.0-SNAPSHOT-008</version>
+<version>1.0.0-SNAPSHOT-009</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -23,6 +23,12 @@ all modules and does not describe the project structure per-subproject.
 </licenses>
 
 <dependencies>
+  <dependency>
+    <groupId>org.jetbrains.kotlin</groupId>
+    <artifactId>kotlin-stdlib</artifactId>
+    <version>2.3.21</version>
+    <scope>compile</scope>
+  </dependency>
   <dependency>
     <groupId>com.puppycrawl.tools</groupId>
     <artifactId>checkstyle</artifactId>
@@ -130,11 +136,6 @@ all modules and does not describe the project structure per-subproject.
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
-    <artifactId>kotlin-stdlib</artifactId>
-    <version>2.3.21</version>
-  </dependency>
-  <dependency>
-    <groupId>org.jetbrains.kotlin</groupId>
     <artifactId>kotlin-test</artifactId>
     <version>2.3.21</version>
   </dependency>
@@ -149,7 +150,6 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>org.jetbrains.kotlin</groupId>
     <artifactId>kotlin-test-junit5</artifactId>
-    <version>2.3.21</version>
   </dependency>
   <dependency>
     <groupId>org.jetbrains.kotlinx</groupId>
@@ -167,6 +167,11 @@ all modules and does not describe the project structure per-subproject.
     <version>1.10.2</version>
   </dependency>
   <dependency>
+    <groupId>org.jetbrains.lincheck</groupId>
+    <artifactId>lincheck</artifactId>
+    <version>3.6</version>
+  </dependency>
+  <dependency>
     <groupId>org.junit</groupId>
     <artifactId>junit-bom</artifactId>
     <version>6.1.0</version>
@@ -174,12 +179,16 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>org.junit.jupiter</groupId>
     <artifactId>junit-jupiter-engine</artifactId>
-    <version>6.1.0</version>
   </dependency>
   <dependency>
     <groupId>org.openjdk.jmh</groupId>
     <artifactId>jmh-core</artifactId>
     <version>1.37</version>
+  </dependency>
+  <dependency>
+    <groupId>org.openjdk.jmh</groupId>
+    <artifactId>jmh-generator-bytecode</artifactId>
+    <version>1.36</version>
   </dependency>
   <dependency>
     <groupId>org.openjdk.jol</groupId>
